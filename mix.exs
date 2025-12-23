@@ -90,7 +90,10 @@ defmodule StyleCapsule.MixProject do
       source_url: @source_url,
       extras: [
         "README.md",
-        "CHANGELOG.md"
+        "CHANGELOG.md",
+        "MIGRATION_FROM_RUBY.md",
+        "CONTRIBUTING.md",
+        "LICENSE.md"
       ]
     ]
   end

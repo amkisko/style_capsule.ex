@@ -348,6 +348,6 @@ end
 ## Need Help?
 
 - Check the [main README](README.md) for detailed usage examples
-- See the [example Phoenix app](../examples/phoenix_demo) for a complete working example
+- See the [example Phoenix app](examples/phoenix_demo/README.md) for a complete working example
 - Open an issue on GitHub if you encounter migration issues
 

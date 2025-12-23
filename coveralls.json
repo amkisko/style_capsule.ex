@@ -1,0 +1,5 @@
+{
+  "skip_files": [
+    "lib/mix/tasks/style_capsule.bench.ex"
+  ]
+}

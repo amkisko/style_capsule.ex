@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <.live_title suffix=" · Phoenix Framework">
+      <%= assigns[:page_title] || "PhoenixDemo" %>
+    </.live_title>
+    <style>
+      <%= raw global_styles() %>
+    </style>
+    <%= raw StyleCapsule.Phoenix.render_styles(namespace: :app) %>
+    <%= raw StyleCapsule.Phoenix.render_styles(namespace: :admin) %>
+  </head>
+  <body>
+    <header>
+      <section class="container">
+        <nav>
+          <ul>
+            <li><a href="/">Home</a></li>
+          </ul>
+        </nav>
+      </section>
+    </header>
+    <main role="main" class="container">
+      <.flash_group flash={@flash} />
+      <%= @inner_content %>
+    </main>
+  </body>
+</html>
+

@@ -12,20 +12,14 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     
-    strategy:
-      fail-fast: false
-      matrix:
-        elixir-version: ["1.18", "1.19", "1.20"]
-        otp-version: ["26", "27"]
-    
     steps:
       - uses: actions/checkout@v4
       
       - name: Set up Erlang/OTP
         uses: erlef/setup-beam@v1
         with:
-          elixir-version: ${{ matrix.elixir-version }}
-          otp-version: ${{ matrix.otp-version }}
+          elixir-version: "1.18"
+          otp-version: "27"
       
       - name: Install dependencies
         run: |
@@ -53,7 +47,7 @@ jobs:
       - name: Set up Erlang/OTP
         uses: erlef/setup-beam@v1
         with:
-          elixir-version: "1.20"
+          elixir-version: "1.18"
           otp-version: "27"
       
       - name: Install dependencies

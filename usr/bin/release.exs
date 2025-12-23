@@ -55,8 +55,7 @@ defmodule ReleaseScript do
     end
 
     # Get version from mix.exs
-    {version, _} = Code.eval_file("mix.exs")
-    version = extract_version(version)
+    version = extract_version_from_file("mix.exs")
 
     if version do
       package_name = "style_capsule"
@@ -120,31 +119,18 @@ defmodule ReleaseScript do
     end
   end
 
-  defp extract_version({:ok, ast}) do
-    extract_version_from_ast(ast)
-  end
-
-  defp extract_version(_) do
-    # Try to read mix.exs and extract version
-    case File.read("mix.exs") do
+  defp extract_version_from_file(filename) do
+    case File.read(filename) do
       {:ok, content} ->
-        case Regex.run(~r/version:\s*"([^"]+)"/, content) do
+        # Try to match @version "..." first (module attribute)
+        case Regex.run(~r/@version\s+"([^"]+)"/, content) do
           [_, version] -> version
-          _ -> nil
-        end
-      _ ->
-        nil
-    end
-  end
-
-  defp extract_version_from_ast(_ast) do
-    # This is a simplified version - in practice, you'd parse the AST properly
-    # For now, we'll use regex on the file content
-    case File.read("mix.exs") do
-      {:ok, content} ->
-        case Regex.run(~r/version:\s*"([^"]+)"/, content) do
-          [_, version] -> version
-          _ -> nil
+          _ ->
+            # Fallback to version: "..." in project list
+            case Regex.run(~r/version:\s*"([^"]+)"/, content) do
+              [_, version] -> version
+              _ -> nil
+            end
         end
       _ ->
         nil

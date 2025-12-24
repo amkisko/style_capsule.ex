@@ -1,9 +1,9 @@
 defmodule StyleCapsule.ErrorTest do
   use ExUnit.Case, async: true
 
+  alias StyleCapsule.CapsuleNotFoundError
   alias StyleCapsule.Error
   alias StyleCapsule.InvalidStyleError
-  alias StyleCapsule.CapsuleNotFoundError
   alias StyleCapsule.RegistryError
 
   describe "StyleCapsule.Error" do
@@ -25,17 +25,18 @@ defmodule StyleCapsule.ErrorTest do
 
   describe "StyleCapsule.InvalidStyleError" do
     test "raises with module and styles" do
-      error = InvalidStyleError.exception(
-        module: TestModule,
-        styles: ".test { color: red; }",
-        message: "Invalid styles detected"
-      )
+      error =
+        InvalidStyleError.exception(
+          module: TestModule,
+          styles: ".test { color: red; }",
+          message: "Invalid styles detected"
+        )
 
       assert %InvalidStyleError{
-        message: "Invalid styles detected",
-        module: TestModule,
-        styles: ".test { color: red; }"
-      } = error
+               message: "Invalid styles detected",
+               module: TestModule,
+               styles: ".test { color: red; }"
+             } = error
     end
 
     test "has default message" do
@@ -47,15 +48,16 @@ defmodule StyleCapsule.ErrorTest do
 
   describe "StyleCapsule.CapsuleNotFoundError" do
     test "raises with module" do
-      error = CapsuleNotFoundError.exception(
-        module: TestModule,
-        message: "Capsule not found"
-      )
+      error =
+        CapsuleNotFoundError.exception(
+          module: TestModule,
+          message: "Capsule not found"
+        )
 
       assert %CapsuleNotFoundError{
-        message: "Capsule not found",
-        module: TestModule
-      } = error
+               message: "Capsule not found",
+               module: TestModule
+             } = error
     end
 
     test "has default message" do
@@ -67,15 +69,16 @@ defmodule StyleCapsule.ErrorTest do
 
   describe "StyleCapsule.RegistryError" do
     test "raises with operation" do
-      error = RegistryError.exception(
-        operation: :register,
-        message: "Registry operation failed"
-      )
+      error =
+        RegistryError.exception(
+          operation: :register,
+          message: "Registry operation failed"
+        )
 
       assert %RegistryError{
-        message: "Registry operation failed",
-        operation: :register
-      } = error
+               message: "Registry operation failed",
+               operation: :register
+             } = error
     end
 
     test "has default message" do

@@ -38,14 +38,7 @@ defmodule StyleCapsule.CompileRegistry do
     # This file is created during compilation and read during build
     registry_path = registry_path()
 
-    try do
-      File.mkdir_p!(Path.dirname(registry_path))
-    rescue
-      e ->
-        raise StyleCapsule.RegistryError,
-          message: "Failed to create registry directory: #{Exception.message(e)}",
-          operation: :register
-    end
+    File.mkdir_p!(Path.dirname(registry_path))
 
     # Read existing registry or start fresh
     existing_data = read_registry_data()
@@ -56,11 +49,12 @@ defmodule StyleCapsule.CompileRegistry do
     new_specs = [spec | Enum.reject(existing_specs, &(&1.module == spec.module))]
 
     # Write back to file, preserving build metadata if it exists
-    registry_data = if existing_build do
-      %{components: new_specs, build: existing_build}
-    else
-      new_specs
-    end
+    registry_data =
+      if existing_build do
+        %{components: new_specs, build: existing_build}
+      else
+        new_specs
+      end
 
     content = """
     # Auto-generated StyleCapsule component registry
@@ -70,6 +64,11 @@ defmodule StyleCapsule.CompileRegistry do
 
     File.write!(registry_path, content)
     :ok
+  rescue
+    e ->
+      reraise StyleCapsule.RegistryError,
+              [message: "Failed to create registry directory: #{Exception.message(e)}", operation: :register],
+              __STACKTRACE__
   end
 
   @doc """
@@ -128,9 +127,11 @@ defmodule StyleCapsule.CompileRegistry do
   """
   def clear do
     registry_path = registry_path()
+
     if File.exists?(registry_path) do
       File.rm!(registry_path)
     end
+
     :ok
   end
 
@@ -218,13 +219,19 @@ defmodule StyleCapsule.CompileRegistry do
             # Path structure: _build/dev/lib/app_name/ebin
             project_root =
               app_dir
-              |> Path.dirname()      # Remove ebin -> _build/dev/lib/app_name
-              |> Path.dirname()      # Remove lib/app_name -> _build/dev/lib
-              |> Path.dirname()      # Remove lib -> _build/dev
-              |> Path.dirname()      # Remove _build/dev -> _build
-              |> Path.dirname()      # Remove _build -> project root
+              # Remove ebin -> _build/dev/lib/app_name
+              |> Path.dirname()
+              # Remove lib/app_name -> _build/dev/lib
+              |> Path.dirname()
+              # Remove lib -> _build/dev
+              |> Path.dirname()
+              # Remove _build/dev -> _build
+              |> Path.dirname()
+              # Remove _build -> project root
+              |> Path.dirname()
 
             registry_path = Path.join([project_root, "priv", @registry_file])
+
             if File.exists?(registry_path) do
               registry_path
             else
@@ -258,13 +265,19 @@ defmodule StyleCapsule.CompileRegistry do
       if app do
         try do
           app_dir = Application.app_dir(app)
+
           project_root =
             app_dir
-            |> Path.dirname()      # Remove ebin
-            |> Path.dirname()      # Remove lib/app_name
-            |> Path.dirname()      # Remove lib
-            |> Path.dirname()      # Remove _build/dev (or _build/prod)
-            |> Path.dirname()      # Remove _build
+            # Remove ebin
+            |> Path.dirname()
+            # Remove lib/app_name
+            |> Path.dirname()
+            # Remove lib
+            |> Path.dirname()
+            # Remove _build/dev (or _build/prod)
+            |> Path.dirname()
+            # Remove _build
+            |> Path.dirname()
 
           project_priv = Path.join([project_root, "priv"])
           Path.join([project_priv, @registry_file])
@@ -279,10 +292,8 @@ defmodule StyleCapsule.CompileRegistry do
 
   defp fallback_registry_path do
     # Strategy 3: Fall back to File.cwd!() (works during compilation)
-    try do
-      Path.join([File.cwd!(), "priv", @registry_file])
-    rescue
-      _ -> Path.join([System.tmp_dir!(), @registry_file])
-    end
+    Path.join([File.cwd!(), "priv", @registry_file])
+  rescue
+    _ -> Path.join([System.tmp_dir!(), @registry_file])
   end
 end

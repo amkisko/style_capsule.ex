@@ -122,6 +122,7 @@ defmodule StyleCapsule do
           else
             []
           end
+
         {:error, _} ->
           []
       end

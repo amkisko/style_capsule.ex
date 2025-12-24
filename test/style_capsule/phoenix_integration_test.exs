@@ -98,5 +98,93 @@ defmodule StyleCapsule.PhoenixIntegrationTest do
       assert html =~ "none_id12"
       assert html =~ "time_id34"
     end
+
+    test "render_styles with empty namespace returns empty string" do
+      Registry.clear()
+      html = Phoenix.render_styles(namespace: :empty)
+      assert html == ""
+    end
+
+    test "register_inline with different strategies" do
+      css = ".test { color: red; }"
+      capsule_id1 = "patch12345"
+      capsule_id2 = "nest12345"
+
+      Phoenix.register_inline(css, capsule_id1, namespace: :test, strategy: :patch)
+      Phoenix.register_inline(css, capsule_id2, namespace: :test, strategy: :nesting)
+
+      html = Phoenix.render_styles(namespace: :test)
+      assert html =~ capsule_id1
+      assert html =~ capsule_id2
+    end
+
+    test "register_inline with attrs" do
+      css = ".test { color: red; }"
+      capsule_id = "attrs12345"
+
+      Phoenix.register_inline(css, capsule_id, namespace: :test, attrs: [media: "print"])
+
+      html = Phoenix.render_styles(namespace: :test)
+      assert html =~ ~r/media="print"/
+    end
+
+    test "register_stylesheet with attrs" do
+      href = "/assets/capsules/card.css"
+
+      Phoenix.register_stylesheet(href, namespace: :test, attrs: [media: "screen"])
+
+      html = Phoenix.render_styles(namespace: :test)
+      assert html =~ ~r/media="screen"/
+    end
+
+    test "precompiled_stylesheet_links returns list (may be empty or have existing files)" do
+      links = Phoenix.precompiled_stylesheet_links()
+      # May have existing build metadata from previous test runs
+      assert is_list(links)
+    end
+
+    test "precompiled_stylesheet_links with namespace filter" do
+      # This will be empty unless build metadata exists
+      links = Phoenix.precompiled_stylesheet_links(namespace: :test)
+      assert is_list(links)
+    end
+
+    test "precompiled_stylesheet_links with base_path" do
+      links = Phoenix.precompiled_stylesheet_links(base_path: "/assets")
+      assert is_list(links)
+    end
+
+    test "render_precompiled_stylesheets returns string (may be empty or have existing files)" do
+      html = Phoenix.render_precompiled_stylesheets()
+      # May have existing build metadata from previous test runs
+      assert is_binary(html)
+    end
+
+    test "render_precompiled_stylesheets with namespace" do
+      html = Phoenix.render_precompiled_stylesheets(namespace: :test)
+      assert is_binary(html)
+    end
+
+    test "render_styles handles both inline and stylesheet links" do
+      css = ".test { color: red; }"
+      capsule_id = "mixed12345"
+      href = "/assets/test.css"
+
+      Phoenix.register_inline(css, capsule_id, namespace: :test)
+      Phoenix.register_stylesheet(href, namespace: :test)
+
+      html = Phoenix.render_styles(namespace: :test)
+
+      assert html =~ capsule_id
+      assert html =~ href
+      assert html =~ "<style"
+      assert html =~ "<link"
+    end
+
+    test "render_styles filters empty strings" do
+      Registry.clear()
+      html = Phoenix.render_styles(namespace: :test)
+      assert html == ""
+    end
   end
 end

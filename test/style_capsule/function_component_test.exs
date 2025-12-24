@@ -129,7 +129,7 @@ defmodule StyleCapsule.FunctionComponentTest do
 
       # Check that styles were registered
       styles = Registry.get_inline_styles(:test)
-      assert length(styles) > 0
+      assert not Enum.empty?(styles)
 
       # Find the style for this component
       capsule_id = StyleCapsule.capsule_id(TestFunctionComponent)
@@ -155,7 +155,7 @@ defmodule StyleCapsule.FunctionComponentTest do
 
       # Check that styles were registered in the correct namespace
       styles = Registry.get_inline_styles(:test_nesting)
-      assert length(styles) > 0
+      assert not Enum.empty?(styles)
 
       capsule_id = StyleCapsule.capsule_id(TestFunctionComponentNesting)
       component_style = Enum.find(styles, fn s -> s.id == capsule_id end)
@@ -180,7 +180,7 @@ defmodule StyleCapsule.FunctionComponentTest do
 
       # Styles should still be registered even with time cache strategy
       styles = Registry.get_inline_styles(:test_cache)
-      assert length(styles) > 0
+      assert not Enum.empty?(styles)
     end
 
     test "capsule/1 handles components without styles gracefully" do
@@ -213,6 +213,7 @@ defmodule StyleCapsule.FunctionComponentTest do
           module: module,
           inner_block: fn _ -> [] end
         }
+
         try do
           Component.capsule(assigns)
         rescue
@@ -224,8 +225,8 @@ defmodule StyleCapsule.FunctionComponentTest do
       test_styles = Registry.get_inline_styles(:test)
       nesting_styles = Registry.get_inline_styles(:test_nesting)
 
-      assert length(test_styles) > 0
-      assert length(nesting_styles) > 0
+      assert not Enum.empty?(test_styles)
+      assert not Enum.empty?(nesting_styles)
 
       # Styles should be in different namespaces
       test_capsule_id = StyleCapsule.capsule_id(TestFunctionComponent)

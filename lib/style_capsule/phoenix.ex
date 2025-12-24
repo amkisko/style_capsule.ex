@@ -51,20 +51,22 @@ defmodule StyleCapsule.Phoenix do
     namespaces = StyleCapsule.Registry.get_all_namespaces()
 
     # Collect all styles from all namespaces
-    all_styles = Enum.reduce(namespaces, [], fn namespace, acc ->
-      styles_html = render_styles(namespace: namespace)
-      if styles_html && styles_html != "" do
-        [styles_html | acc]
-      else
-        acc
-      end
-    end)
+    all_styles =
+      Enum.reduce(namespaces, [], fn namespace, acc ->
+        styles_html = render_styles(namespace: namespace)
+
+        if styles_html != "" do
+          [styles_html | acc]
+        else
+          acc
+        end
+      end)
 
     # Return combined styles or empty string
-    if length(all_styles) > 0 do
-      Enum.join(Enum.reverse(all_styles), "\n")
-    else
+    if Enum.empty?(all_styles) do
       ""
+    else
+      Enum.join(Enum.reverse(all_styles), "\n")
     end
   end
 
@@ -155,7 +157,8 @@ defmodule StyleCapsule.Phoenix do
         file
         |> String.replace(~r/^priv\/static\//, "")
         |> then(&Path.join([path, &1]))
-        |> String.replace("\\", "/")  # Normalize Windows paths
+        # Normalize Windows paths
+        |> String.replace("\\", "/")
 
       _ ->
         file

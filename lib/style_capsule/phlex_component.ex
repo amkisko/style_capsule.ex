@@ -36,9 +36,9 @@ defmodule StyleCapsule.PhlexComponent do
 
       # Get configuration from opts or fall back to StyleCapsule.Config defaults
       @style_capsule_namespace Keyword.get(unquote(opts), :namespace) ||
-                                  StyleCapsule.Config.default_namespace()
+                                 StyleCapsule.Config.default_namespace()
       @style_capsule_strategy Keyword.get(unquote(opts), :strategy) ||
-                                 StyleCapsule.Config.default_strategy()
+                                StyleCapsule.Config.default_strategy()
       @style_capsule_cache Keyword.get(unquote(opts), :cache_strategy) ||
                              StyleCapsule.Config.default_cache_strategy()
 
@@ -52,6 +52,7 @@ defmodule StyleCapsule.PhlexComponent do
               component
               |> Map.from_struct()
               |> Map.delete(:__struct__)
+
             assigns_map ->
               assigns_map
           end
@@ -78,15 +79,16 @@ defmodule StyleCapsule.PhlexComponent do
 
       defp register_runtime_styles(module, cache_strategy) do
         # Get styles from the module
-        styles = if function_exported?(module, :styles, 0) do
-          try do
-            module.styles()
-          rescue
-            _ -> ""
+        styles =
+          if function_exported?(module, :styles, 0) do
+            try do
+              module.styles()
+            rescue
+              _ -> ""
+            end
+          else
+            ""
           end
-        else
-          ""
-        end
 
         if styles && styles != "" do
           namespace = @style_capsule_namespace
@@ -119,11 +121,12 @@ defmodule StyleCapsule.PhlexComponent do
 
   defmacro __before_compile__(env) do
     # Get component styles at compile time
-    styles = case Module.get_attribute(env.module, :component_styles) do
-      nil -> ""
-      s when is_binary(s) -> s
-      _ -> ""
-    end
+    styles =
+      case Module.get_attribute(env.module, :component_styles) do
+        nil -> ""
+        s when is_binary(s) -> s
+        _ -> ""
+      end
 
     # Get configuration from module attributes
     namespace = Module.get_attribute(env.module, :style_capsule_namespace) || :default
@@ -158,20 +161,25 @@ defmodule StyleCapsule.PhlexComponent do
   end
 
   @doc false
+  @dialyzer {:nowarn_function, add_capsule_attrs: 2}
   def add_capsule_attrs(attrs, module) do
     case Code.ensure_loaded(Phlex.StyleCapsule) do
       {:module, Phlex.StyleCapsule} ->
-        try do
-          # Use apply to avoid compile-time warnings when Phlex.StyleCapsule is not available
+        if function_exported?(Phlex.StyleCapsule, :add_capsule_attr, 2) do
+          # Phlex.StyleCapsule is an optional dependency, use apply to avoid Dialyzer warnings
+          # credo:disable-for-next-line
           apply(Phlex.StyleCapsule, :add_capsule_attr, [attrs, module])
-        rescue
-          _ -> add_capsule_attr_direct(attrs, StyleCapsule.capsule_id(module))
+        else
+          add_capsule_attr_direct(attrs, StyleCapsule.capsule_id(module))
         end
 
       {:error, _} ->
         # Phlex.StyleCapsule not available, generate capsule ID directly
         add_capsule_attr_direct(attrs, StyleCapsule.capsule_id(module))
     end
+  rescue
+    _ ->
+      add_capsule_attr_direct(attrs, StyleCapsule.capsule_id(module))
   end
 
   defp add_capsule_attr_direct(attrs, capsule_id) when is_list(attrs) do

@@ -16,7 +16,7 @@ This example demonstrates how to use `style_capsule` **without Phoenix** in a pl
 From the project root:
 
 ```bash
-cd /Users/amkisko/workflow/github/amkisko/style_capsule.ex
+cd path/to/style_capsule.ex
 mix deps.get  # This will fetch plug and plug_cowboy (optional dependencies)
 mix compile
 mix run examples/standalone/example.exs

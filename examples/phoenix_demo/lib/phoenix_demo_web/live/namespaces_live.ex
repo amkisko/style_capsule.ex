@@ -35,21 +35,21 @@ defmodule PhoenixDemoWeb.NamespacesLive do
             <PhoenixDemoWeb.Components.BlogPostCard.blog_post_card
               title="Getting Started with StyleCapsule"
               excerpt="Learn how to use attribute-based CSS scoping in your Phoenix applications."
-              author="Jane Doe"
+              author="Author One"
               date="2024-01-15"
               tag="Tutorial"
             />
             <PhoenixDemoWeb.Components.BlogPostCard.blog_post_card
               title="Advanced CSS Scoping Patterns"
               excerpt="Explore advanced techniques for component-scoped styles and namespace isolation."
-              author="John Smith"
+              author="Author Two"
               date="2024-01-20"
               tag="Advanced"
             />
             <PhoenixDemoWeb.Components.BlogPostCard.blog_post_card
               title="Performance Optimization Tips"
               excerpt="Discover how to optimize your CSS delivery with StyleCapsule's caching strategies."
-              author="Sarah Johnson"
+              author="Author Three"
               date="2024-01-25"
               tag="Performance"
             />

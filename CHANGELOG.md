@@ -1,5 +1,26 @@
 # CHANGELOG
 
+## 0.7.0
+
+- Added conditional namespace-based stylesheet loading via `:namespace` option in `render_precompiled_stylesheets/1`
+- Fixed function component style registration - components without `render/1` now properly register styles at runtime
+- Improved runtime registry path resolution for better reliability across different deployment scenarios
+- Enhanced `precompiled_stylesheet_links/1` to support namespace filtering for page-specific CSS loading
+
+## 0.6.0
+
+- Introduced Phlex support into `StyleCapsule.PhlexComponent` module - `StyleCapsule.Component` is now exclusively for Phoenix LiveView components
+- Added compile-time component registration via `StyleCapsule.CompileRegistry`
+- Enhanced build task to discover and register missing components automatically
+- Improved namespace isolation in generated CSS files
+- Added configuration option to control CSS comments in generated files
+
+## 0.5.1
+
+- Fixed README documentation: corrected statement about Phoenix example apps availability
+- Fixed incorrect path dependency example in README (removed extra `/style_capsule` segment)
+- Fixed escaped quotes in code examples throughout README
+
 ## 0.5.0
 
 - Initial public release of `style_capsule.ex`

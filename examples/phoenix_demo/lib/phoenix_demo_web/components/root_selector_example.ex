@@ -1,5 +1,6 @@
 defmodule PhoenixDemoWeb.Components.RootSelectorExample do
   use Phoenix.Component
+  use StyleCapsule.Component, namespace: :app
 
   @component_styles """
   /* Root selector - targets only the wrapper element itself */
@@ -42,24 +43,19 @@ defmodule PhoenixDemoWeb.Components.RootSelectorExample do
   }
   """
 
+  attr :label, :string, default: "Metric"
+  attr :value, :string, default: "0"
+  attr :description, :string, default: nil
+
   def root_selector_example(assigns) do
-    assigns = assign(assigns, :label, Map.get(assigns, :label, "Metric"))
-    assigns = assign(assigns, :value, Map.get(assigns, :value, "0"))
-    assigns = assign(assigns, :description, Map.get(assigns, :description))
-
-    capsule_id = StyleCapsule.capsule_id(__MODULE__)
-    StyleCapsule.Phoenix.register_inline(@component_styles, capsule_id, namespace: :app)
-
-    assigns = assign(assigns, :capsule_id, capsule_id)
-
     ~H"""
-    <div data-capsule={@capsule_id}>
+    <.capsule module={__MODULE__}>
       <div class="label"><%= @label %></div>
       <div class="value"><%= @value %></div>
       <%= if @description do %>
         <div class="description"><%= @description %></div>
       <% end %>
-    </div>
+    </.capsule>
     """
   end
 end

@@ -33,6 +33,138 @@ defmodule StyleCapsule.Phoenix do
   end
 
   @doc """
+  Renders all registered runtime styles from all namespaces as HTML.
+
+  This is a convenience function that collects and renders all runtime styles
+  (components with cache_strategy: :none or :time) from all namespaces in a single call.
+
+  Namespaces are discovered dynamically from the registry, so no hardcoded values are needed.
+
+  ## Examples
+
+      <%= StyleCapsule.Phoenix.render_all_runtime_styles() %>
+
+  """
+  @spec render_all_runtime_styles() :: binary()
+  def render_all_runtime_styles do
+    # Get all namespaces dynamically from the registry
+    namespaces = StyleCapsule.Registry.get_all_namespaces()
+
+    # Collect all styles from all namespaces
+    all_styles = Enum.reduce(namespaces, [], fn namespace, acc ->
+      styles_html = render_styles(namespace: namespace)
+      if styles_html && styles_html != "" do
+        [styles_html | acc]
+      else
+        acc
+      end
+    end)
+
+    # Return combined styles or empty string
+    if length(all_styles) > 0 do
+      Enum.join(Enum.reverse(all_styles), "\n")
+    else
+      ""
+    end
+  end
+
+  @doc """
+  Returns precompiled stylesheet links from the build registry.
+
+  This function reads the build metadata from the compile-time registry
+  and returns a list of stylesheet link maps that can be easily rendered.
+
+  ## Options
+
+    * `:namespace` - Specific namespace to return. If not provided, returns all namespaces.
+    * `:base_path` - Base path for converting file paths to URLs. Defaults to removing `priv/static` prefix.
+
+  ## Returns
+
+    A list of stylesheet link maps with `:href` and `:attrs` keys.
+
+  ## Examples
+
+      # Get all stylesheet links
+      links = StyleCapsule.Phoenix.precompiled_stylesheet_links()
+      # => [%{href: "/assets/css/style_capsules_user.css", attrs: []}, ...]
+
+      # Get links for specific namespace
+      links = StyleCapsule.Phoenix.precompiled_stylesheet_links(namespace: :user)
+      # => [%{href: "/assets/css/style_capsules_user.css", attrs: []}]
+
+  """
+  @spec precompiled_stylesheet_links(keyword()) :: [%{href: binary(), attrs: keyword()}]
+  def precompiled_stylesheet_links(opts \\ []) do
+    namespace_filter = Keyword.get(opts, :namespace)
+    base_path = Keyword.get(opts, :base_path)
+
+    case StyleCapsule.CompileRegistry.get_build_metadata() do
+      %{namespaces: namespaces} when is_list(namespaces) ->
+        namespaces
+        |> Enum.filter(fn %{namespace: ns} ->
+          if namespace_filter, do: ns == namespace_filter, else: true
+        end)
+        |> Enum.map(fn %{file: file} ->
+          href = convert_file_path_to_url(file, base_path)
+          %{href: href, attrs: [phx_track_static: true]}
+        end)
+
+      _ ->
+        []
+    end
+  end
+
+  @doc """
+  Renders precompiled stylesheet links as HTML.
+
+  This is a convenience function that calls `precompiled_stylesheet_links/1`
+  and renders them as HTML `<link>` tags.
+
+  ## Options
+
+    * `:namespace` - Specific namespace to render. If not provided, renders all namespaces.
+    * `:base_path` - Base path for converting file paths to URLs.
+
+  ## Examples
+
+      # In HEEx template
+      <%= StyleCapsule.Phoenix.render_precompiled_stylesheets() %>
+
+      # In Phlex component
+      StyleCapsule.Phoenix.render_precompiled_stylesheets()
+      |> Phlex.SGML.append_raw(state)
+
+  """
+  @spec render_precompiled_stylesheets(keyword()) :: binary()
+  def render_precompiled_stylesheets(opts \\ []) do
+    links = precompiled_stylesheet_links(opts)
+    render_stylesheet_links(links)
+  end
+
+  defp convert_file_path_to_url(file, base_path) when is_binary(file) do
+    case base_path do
+      nil ->
+        # Default: remove "priv/static" prefix and ensure it starts with "/"
+        file
+        |> String.replace(~r/^priv\/static\//, "")
+        |> then(&if String.starts_with?(&1, "/"), do: &1, else: "/#{&1}")
+
+      path when is_binary(path) ->
+        # Custom base path
+        file
+        |> String.replace(~r/^priv\/static\//, "")
+        |> then(&Path.join([path, &1]))
+        |> String.replace("\\", "/")  # Normalize Windows paths
+
+      _ ->
+        file
+    end
+  end
+
+  defp convert_file_path_to_url(_file, _base_path), do: ""
+
+  @doc """
   Registers inline CSS for head rendering.
 
   ## Options

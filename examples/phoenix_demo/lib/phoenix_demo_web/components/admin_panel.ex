@@ -1,5 +1,6 @@
 defmodule PhoenixDemoWeb.Components.AdminPanel do
   use Phoenix.Component
+  use StyleCapsule.Component, namespace: :admin, strategy: :nesting
 
   @component_styles """
   /* Root selector pattern - targets only the root element */
@@ -43,20 +44,12 @@ defmodule PhoenixDemoWeb.Components.AdminPanel do
   }
   """
 
+  attr :title, :string, default: "Admin Panel"
+  slot :inner_block, required: true
+
   def admin_panel(assigns) do
-    assigns = assign(assigns, :title, Map.get(assigns, :title, "Admin Panel"))
-
-    capsule_id = StyleCapsule.capsule_id(__MODULE__)
-    # Using :nesting strategy and :admin namespace
-    StyleCapsule.Phoenix.register_inline(@component_styles, capsule_id,
-      namespace: :admin,
-      strategy: :nesting
-    )
-
-    assigns = assign(assigns, :capsule_id, capsule_id)
-
     ~H"""
-    <div data-capsule={@capsule_id}>
+    <.capsule module={__MODULE__}>
       <h2 class="title"><%= @title %></h2>
       <div class="content">
         <%= render_slot(@inner_block) %>
@@ -64,7 +57,7 @@ defmodule PhoenixDemoWeb.Components.AdminPanel do
       <div class="warning">
         ⚠️ This panel uses the <code>:admin</code> namespace and <code>:nesting</code> strategy.
       </div>
-    </div>
+    </.capsule>
     """
   end
 end

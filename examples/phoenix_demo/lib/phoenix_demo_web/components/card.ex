@@ -1,5 +1,6 @@
 defmodule PhoenixDemoWeb.Components.Card do
   use Phoenix.Component
+  use StyleCapsule.Component, namespace: :app
 
   @component_styles """
   .root {
@@ -33,23 +34,21 @@ defmodule PhoenixDemoWeb.Components.Card do
   }
   """
 
+  attr :heading, :string, default: nil
+  slot :inner_block, required: true
+
   def card(assigns) do
-    assigns = assign(assigns, :heading, Map.get(assigns, :heading))
-
-    capsule_id = StyleCapsule.capsule_id(__MODULE__)
-    assigns = assign(assigns, :capsule_id, capsule_id)
-
-    StyleCapsule.Phoenix.register_inline(@component_styles, capsule_id, namespace: :app)
-
     ~H"""
-    <div data-capsule={@capsule_id} class="root">
-      <%= if @heading do %>
-        <h2 class="heading"><%= @heading %></h2>
-      <% end %>
-      <div class="content">
-        <%= render_slot(@inner_block) %>
+    <.capsule module={__MODULE__}>
+      <div class="root">
+        <%= if @heading do %>
+          <h2 class="heading"><%= @heading %></h2>
+        <% end %>
+        <div class="content">
+          <%= render_slot(@inner_block) %>
+        </div>
       </div>
-    </div>
+    </.capsule>
     """
   end
 end

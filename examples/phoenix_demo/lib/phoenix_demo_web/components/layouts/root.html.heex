@@ -9,23 +9,19 @@
     <style>
       <%= raw global_styles() %>
     </style>
-    <%= raw StyleCapsule.Phoenix.render_styles(namespace: :app) %>
-    <%= raw StyleCapsule.Phoenix.render_styles(namespace: :admin) %>
+    <% # Conditionally load precompiled stylesheets based on page namespace %>
+    <% namespace = page_namespace(assigns) %>
+    <%= if namespace do %>
+      <%= raw StyleCapsule.Phoenix.render_precompiled_stylesheets(namespace: namespace) %>
+    <% end %>
   </head>
   <body>
-    <header>
-      <section class="container">
-        <nav>
-          <ul>
-            <li><a href="/">Home</a></li>
-          </ul>
-        </nav>
-      </section>
-    </header>
-    <main role="main" class="container">
+    <PhoenixDemoWeb.Components.Navigation.navigation />
+    <main role="main">
       <.flash_group flash={@flash} />
       <%= @inner_content %>
     </main>
+    <%= raw StyleCapsule.Phoenix.render_all_runtime_styles() %>
   </body>
 </html>
 

@@ -1,5 +1,6 @@
 defmodule PhoenixDemoWeb.Components.FileCachedCard do
   use Phoenix.Component
+  use StyleCapsule.Component, namespace: :app, cache_strategy: :file
 
   @component_styles """
   .file-cached-root {
@@ -43,36 +44,22 @@ defmodule PhoenixDemoWeb.Components.FileCachedCard do
   }
   """
 
+  attr :heading, :string, default: nil
+  slot :inner_block, required: true
+
   def file_cached_card(assigns) do
-    assigns = assign(assigns, :heading, Map.get(assigns, :heading))
-
-    capsule_id = StyleCapsule.capsule_id(__MODULE__)
-    # Using :file cache strategy - styles will be written to files
-    StyleCapsule.Phoenix.register_inline(@component_styles, capsule_id,
-      namespace: :app,
-      cache_strategy: :file
-    )
-
-    # Also register a stylesheet link pointing at the generated file so users
-    # can see file-based caching in action once `mix style_capsule.build` runs.
-    # Default output_dir is `priv/static/capsules`, served under "/capsules".
-    StyleCapsule.Phoenix.register_stylesheet("/capsules/capsule-#{capsule_id}.css",
-      namespace: :app,
-      attrs: [data_capsule: capsule_id]
-    )
-
-    assigns = assign(assigns, :capsule_id, capsule_id)
-
     ~H"""
-    <div data-capsule={@capsule_id} class="file-cached-root">
-      <%= if @heading do %>
-        <h2 class="file-cached-heading"><%= @heading %></h2>
-      <% end %>
-      <div class="file-cached-content">
-        <%= render_slot(@inner_block) %>
+    <.capsule module={__MODULE__}>
+      <div class="file-cached-root">
+        <%= if @heading do %>
+          <h2 class="file-cached-heading"><%= @heading %></h2>
+        <% end %>
+        <div class="file-cached-content">
+          <%= render_slot(@inner_block) %>
+        </div>
+        <span class="file-cached-badge">File-cached</span>
       </div>
-      <span class="file-cached-badge">File-cached</span>
-    </div>
+    </.capsule>
     """
   end
 end

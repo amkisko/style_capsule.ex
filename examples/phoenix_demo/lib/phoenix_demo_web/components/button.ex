@@ -1,5 +1,6 @@
 defmodule PhoenixDemoWeb.Components.Button do
   use Phoenix.Component
+  use StyleCapsule.Component, namespace: :app, cache_strategy: :time
 
   @component_styles """
   .button {
@@ -41,24 +42,17 @@ defmodule PhoenixDemoWeb.Components.Button do
   }
   """
 
+  attr :variant, :string, default: "primary"
+  attr :type, :string, default: "button"
+  slot :inner_block, required: true
+
   def button(assigns) do
-    assigns = assign(assigns, :variant, Map.get(assigns, :variant, "primary"))
-
-    capsule_id = StyleCapsule.capsule_id(__MODULE__)
-    assigns = assign(assigns, :capsule_id, capsule_id)
-
-    StyleCapsule.Phoenix.register_inline(@component_styles, capsule_id,
-      namespace: :app,
-      cache_strategy: :time,
-      cache_ttl: 3600
-    )
-
     ~H"""
-    <div data-capsule={@capsule_id}>
-      <button class={"button #{@variant}"} type={Map.get(assigns, :type, "button")}>
+    <.capsule module={__MODULE__}>
+      <button class={"button #{@variant}"} type={@type}>
         <%= render_slot(@inner_block) %>
       </button>
-    </div>
+    </.capsule>
     """
   end
 end

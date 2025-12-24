@@ -115,6 +115,27 @@ defmodule StyleCapsule.Registry do
   end
 
   @doc """
+  Gets all namespaces that have registered styles or stylesheet links.
+
+  ## Examples
+
+      iex> StyleCapsule.Registry.register_inline(".test { color: red; }", "abc123", namespace: :admin)
+      iex> StyleCapsule.Registry.get_all_namespaces()
+      [:admin]
+
+  """
+  @spec get_all_namespaces() :: [namespace()]
+  def get_all_namespaces do
+    storage = get_storage()
+    inline_namespaces = Map.keys(storage[:inline] || %{})
+    link_namespaces = Map.keys(storage[:links] || %{})
+
+    (inline_namespaces ++ link_namespaces)
+    |> Enum.uniq()
+    |> Enum.sort()
+  end
+
+  @doc """
   Clears the registry for a namespace or all namespaces.
 
   ## Examples

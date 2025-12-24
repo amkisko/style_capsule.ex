@@ -109,4 +109,20 @@ defmodule StyleCapsule.Config do
   def max_css_size do
     Application.get_env(:style_capsule, :max_css_size, 1_000_000)
   end
+
+  @doc """
+  Returns whether to include comments in generated CSS files.
+
+  Defaults to `true` (comments included for easier debugging).
+  Set to `false` for production builds to reduce file size.
+
+  ## Configuration
+
+      config :style_capsule, :include_comments, false
+
+  """
+  @spec include_comments() :: boolean()
+  def include_comments do
+    Application.get_env(:style_capsule, :include_comments, true)
+  end
 end

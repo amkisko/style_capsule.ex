@@ -26,7 +26,7 @@ Add `style_capsule` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:style_capsule, "~> 0.5.0"}
+    {:style_capsule, "~> 0.7.0"}
   ]
 end
 ```
@@ -37,9 +37,38 @@ For Phoenix LiveView support, also ensure you have:
 {:phoenix_live_view, "~> 0.20"}
 ```
 
-## Usage
+## Quick Start
 
-### Phoenix LiveView Components
+### 1. Add Style Tags to Your Layout
+
+In your Phoenix app's root layout (`lib/your_app_web/components/layouts/root.html.heex`):
+
+```heex
+<head>
+  <!-- Precompiled stylesheets (for file-based caching) -->
+  <%= raw StyleCapsule.Phoenix.render_precompiled_stylesheets() %>
+</head>
+<body>
+  <!-- Your content -->
+  <%= @inner_content %>
+  
+  <!-- Runtime styles (for :none and :time cache strategies) -->
+  <%= raw StyleCapsule.Phoenix.render_all_runtime_styles() %>
+</body>
+```
+
+For page-specific stylesheets, you can conditionally load namespaces:
+
+```heex
+<head>
+  <% namespace = page_namespace(assigns) %>
+  <%= if namespace do %>
+    <%= raw StyleCapsule.Phoenix.render_precompiled_stylesheets(namespace: namespace) %>
+  <% end %>
+</head>
+```
+
+### 2. Create a Component with Styles
 
 ```elixir
 defmodule MyAppWeb.Components.Card do
@@ -47,24 +76,22 @@ defmodule MyAppWeb.Components.Card do
   use StyleCapsule.Component
 
   @component_styles """
-  .root { 
+  .card { 
     padding: 1rem;
     border: 1px solid #ccc;
+    border-radius: 0.5rem;
   }
-  .heading { 
+  .title { 
     font-size: 1.5rem;
-    color: #333;
-  }
-  .heading:hover { 
-    opacity: 0.8;
+    font-weight: bold;
   }
   """
 
   def card(assigns) do
     ~H"""
     <.capsule module={__MODULE__}>
-      <div class="root">
-        <h2 class="heading"><%= render_slot(@inner_block) %></h2>
+      <div class="card">
+        <h2 class="title"><%= render_slot(@inner_block) %></h2>
       </div>
     </.capsule>
     """
@@ -72,22 +99,74 @@ defmodule MyAppWeb.Components.Card do
 end
 ```
 
-CSS is automatically scoped with `[data-capsule="..."]` attributes and content is wrapped in a scoped element.
+### 3. Use in LiveView
+
+```elixir
+defmodule MyAppWeb.PageLive do
+  use MyAppWeb, :live_view
+
+  def render(assigns) do
+    ~H"""
+    <div>
+      <.card>Hello from StyleCapsule</.card>
+    </div>
+    """
+  end
+end
+```
+
+That's it! Styles are automatically scoped and registered. No JavaScript required.
+
+## Usage
+
+StyleCapsule automatically scopes your CSS with `[data-capsule="..."]` attributes and wraps your component content in a scoped element. Each component type gets a unique scope ID that's shared across all instances, ensuring styles don't leak between components.
+
+You can customize the wrapper tag by passing `tag` to the capsule component:
+
+```elixir
+<.capsule module={__MODULE__} tag={:section}>
+  <!-- your content -->
+</.capsule>
+```
+
+### Phlex Components
+
+For Phlex components, use `StyleCapsule.PhlexComponent`:
+
+```elixir
+defmodule MyAppWeb.Components.Card do
+  use StyleCapsule.PhlexComponent
+
+  @component_styles """
+  .card { padding: 1rem; border: 1px solid #ccc; }
+  .heading { font-size: 1.5rem; color: #333; }
+  """
+
+  defp render_template(assigns, attrs, state) do
+    div(state, attrs, fn state ->
+      h2(state, [class: "heading"], "Card Title")
+    end)
+  end
+end
+```
+
+PhlexComponent automatically registers styles at compile time, adds `data-capsule` attributes, and generates `style_capsule_spec/0` for discovery.
 
 ### Standalone Usage
+
+StyleCapsule can be used outside of Phoenix:
 
 ```elixir
 css = ".section { color: red; }"
 capsule_id = StyleCapsule.capsule_id(MyComponent)
 scoped_css = StyleCapsule.scope_css(css, capsule_id)
-# => "[data-capsule=\"abc123\"] .section { color: red; }"
+# => "[data-capsule="abc123"] .section { color: red; }"
 
 html = """
 <div class="section">Hello from standalone</div>
 """
 
 wrapped_html = StyleCapsule.wrap(html, capsule_id, tag: :section, attrs: [class: "wrapper"])
-
 # => <section data-capsule="abc123" class="wrapper"><div class="section">Hello from standalone</div></section>
 ```
 
@@ -97,37 +176,27 @@ For a complete, runnable script, see `examples/standalone/example.exs`.
 
 StyleCapsule supports two CSS scoping strategies:
 
-1. **Selector Patching (default)**: Adds `[data-capsule="..."]` prefix to each selector
-   - Better browser support (all modern browsers)
-   - Output: `[data-capsule="abc123"] .section { color: red; }`
+1. **Selector Patching (default)**: Adds `[data-capsule="..."]` prefix to each selector. Works in all modern browsers. Output: `[data-capsule="abc123"] .section { color: red; }`
 
-2. **CSS Nesting (optional)**: Wraps entire CSS in `[data-capsule="..."] { ... }`
-   - More performant (no CSS parsing needed)
-   - Requires CSS nesting support (Chrome 112+, Firefox 117+, Safari 16.5+)
-   - Output: `[data-capsule="abc123"] { .section { color: red; } }`
+2. **CSS Nesting (optional)**: Wraps entire CSS in `[data-capsule="..."] { ... }`. More performant (~3.4x faster) but requires CSS nesting support (Chrome 112+, Firefox 117+, Safari 16.5+). Output: `[data-capsule="abc123"] { .section { color: red; } }`
 
-### Configuration
+Configure the strategy when using the component:
 
 ```elixir
-defmodule MyAppWeb.Components.Card do
-  use Phoenix.Component
-  use StyleCapsule.Component, 
-    scoping_strategy: :nesting,  # Use CSS nesting
-    namespace: :admin,
-    cache_strategy: :time,
-    cache_ttl: 3600
-end
+use StyleCapsule.Component, 
+  strategy: :nesting,  # Use CSS nesting
+  namespace: :admin,
+  cache_strategy: :time,
+  cache_ttl: 3600
 ```
 
 ## Caching Strategies
 
-### No Caching (Default)
+StyleCapsule offers multiple caching strategies to optimize performance:
 
-```elixir
-use StyleCapsule.Component  # No cache strategy set (default: :none)
-```
+- **No Caching (default)**: Styles are registered inline on every render. Use for development or when styles change frequently.
 
-### Time-Based Caching
+- **Time-Based Caching**: Cache styles with a time-based expiration. Useful for production when styles are relatively stable.
 
 ```elixir
 use StyleCapsule.Component, 
@@ -135,104 +204,15 @@ use StyleCapsule.Component,
   cache_ttl: 3600  # Cache for 1 hour (in seconds)
 ```
 
-### File-Based Caching (HTTP Caching)
+- **File-Based Caching**: Styles are written to static files for HTTP caching. Best for production performance. Run `mix style_capsule.build` to generate CSS files, which are automatically built during `mix assets.deploy`.
 
 ```elixir
 use StyleCapsule.Component, cache_strategy: :file
 ```
 
-Then run the build task:
-
-```bash
-mix style_capsule.build
-```
-
-Files are automatically built during `mix assets.deploy`.
-
-## Phoenix example
-
-There is no bundled Phoenix app in this repo, but you can try StyleCapsule in any Phoenix 1.7+ app.
-
-### 1. Add dependency
-
-In your Phoenix app `mix.exs`:
-
-```elixir
-def deps do
-  [
-    {:phoenix, \"~> 1.7\"},
-    {:phoenix_live_view, \"~> 0.20\"},
-    {:style_capsule, path: \"../style_capsule.ex/style_capsule\"}
-  ]
-end
-```
-
-Then run:
-
-```bash
-mix deps.get
-```
-
-### 2. Define a component
-
-```elixir
-defmodule MyAppWeb.Components.Card do
-  use Phoenix.Component
-  use StyleCapsule.Component, namespace: :app
-
-  @component_styles \"\"\"
-  .root { padding: 1rem; border: 1px solid #ccc; }
-  .heading { font-weight: bold; }
-  \"\"\"
-
-  def card(assigns) do
-    ~H\"\"\"
-    <.capsule module={__MODULE__}>
-      <div class=\"root\">
-        <h2 class=\"heading\"><%= render_slot(@inner_block) %></h2>
-      </div>
-    </.capsule>
-    \"\"\"
-  end
-end
-```
-
-### 3. Render styles in your layout
-
-In `root.html.heex` (or another layout):
-
-```elixir
-<head>
-  <%= raw StyleCapsule.Phoenix.render_styles(namespace: :app) %>
-</head>
-```
-
-### 4. Use the component
-
-In a LiveView or template:
-
-```elixir
-<.card>
-  Hello from StyleCapsule
-</.card>
-```
-
-Run your Phoenix app with:
-
-```bash
-mix phx.server
-```
-
-You should see scoped styles applied using `[data-capsule=\"...\"]` attributes with no JavaScript required.
-
 ## Example Application
 
-A complete Phoenix example application is available in `examples/phoenix_demo/`. It demonstrates:
-
-- Component-scoped CSS with `StyleCapsule.Component`
-- Multiple caching strategies (`:none`, `:time`, `:file`)
-- Namespace isolation
-- Integration with Phoenix LiveView
+A complete Phoenix example application is available in `examples/phoenix_demo/`. It demonstrates component-scoped CSS, multiple caching strategies, namespace isolation, and Phoenix LiveView integration.
 
 To run the example:
 

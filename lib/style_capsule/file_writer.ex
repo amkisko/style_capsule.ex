@@ -5,16 +5,13 @@ defmodule StyleCapsule.FileWriter do
   Supports fallback directory for read-only filesystems (e.g., Docker containers).
   """
 
-  @default_output_dir "priv/static/capsules"
-  @default_fallback_dir "/tmp/style_capsule"
-
   @doc """
   Writes CSS to a file.
 
   ## Options
 
-    * `:output_dir` - Output directory. Defaults to `priv/static/capsules`.
-    * `:fallback_dir` - Fallback directory for read-only filesystems. Defaults to `/tmp/style_capsule`.
+    * `:output_dir` - Output directory. Defaults to `StyleCapsule.Config.output_dir/0`.
+    * `:fallback_dir` - Fallback directory for read-only filesystems. Defaults to `StyleCapsule.Config.fallback_dir/0`.
     * `:filename_pattern` - Function to generate filename. Defaults to `capsule-{id}.css`.
 
   ## Examples
@@ -25,8 +22,8 @@ defmodule StyleCapsule.FileWriter do
   """
   @spec write(binary(), binary(), keyword()) :: {:ok, binary()} | {:error, term()}
   def write(capsule_id, css, opts \\ []) do
-    output_dir = Keyword.get(opts, :output_dir, @default_output_dir)
-    fallback_dir = Keyword.get(opts, :fallback_dir, @default_fallback_dir)
+    output_dir = Keyword.get(opts, :output_dir, StyleCapsule.Config.output_dir())
+    fallback_dir = Keyword.get(opts, :fallback_dir, StyleCapsule.Config.fallback_dir())
     filename_pattern = Keyword.get(opts, :filename_pattern, &default_filename_pattern/2)
 
     filename = filename_pattern.(capsule_id, css)

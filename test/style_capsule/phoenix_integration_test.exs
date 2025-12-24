@@ -61,5 +61,42 @@ defmodule StyleCapsule.PhoenixIntegrationTest do
       html = Phoenix.render_styles(namespace: :test)
       assert html =~ capsule_id
     end
+
+    test "render_all_runtime_styles renders all namespaces" do
+      # Register styles in multiple namespaces
+      Phoenix.register_inline(".ns1 { color: red; }", "ns1_id123", namespace: :namespace1)
+      Phoenix.register_inline(".ns2 { color: blue; }", "ns2_id456", namespace: :namespace2)
+      Phoenix.register_inline(".ns3 { color: green; }", "ns3_id789", namespace: :namespace3)
+
+      html = Phoenix.render_all_runtime_styles()
+
+      # Should include all namespaces
+      assert html =~ "ns1_id123"
+      assert html =~ "ns2_id456"
+      assert html =~ "ns3_id789"
+      assert html =~ ".ns1"
+      assert html =~ ".ns2"
+      assert html =~ ".ns3"
+    end
+
+    test "render_all_runtime_styles returns empty when no styles" do
+      Registry.clear()
+      html = Phoenix.render_all_runtime_styles()
+      assert html == ""
+    end
+
+    test "render_all_runtime_styles includes all cache strategies" do
+      Registry.clear()
+
+      # Register with different cache strategies
+      Phoenix.register_inline(".none { color: red; }", "none_id12", namespace: :test, cache_strategy: :none)
+      Phoenix.register_inline(".time { color: blue; }", "time_id34", namespace: :test, cache_strategy: :time)
+
+      html = Phoenix.render_all_runtime_styles()
+
+      # Both should be included (runtime strategies)
+      assert html =~ "none_id12"
+      assert html =~ "time_id34"
+    end
   end
 end

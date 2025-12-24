@@ -84,4 +84,47 @@ defmodule StyleCapsule do
   def validate_capsule_id!(id) do
     raise ArgumentError, "Capsule ID must be a binary, got: #{inspect(id)}"
   end
+
+  @doc """
+  Discovers all modules with `style_capsule_spec/0` function in an application.
+
+  **Note:** For precompilation, use `StyleCapsule.CompileRegistry.get_all/0` instead,
+  which reads from the compile-time registry. This function is kept for runtime discovery
+  when components register themselves dynamically.
+
+  ## Options
+
+    * `:modules` - Explicit list of modules to check.
+
+  ## Examples
+
+      # Check specific modules
+      specs = StyleCapsule.discover_components(modules: [MyApp.Components.Card, MyApp.Components.Button])
+
+  """
+  @spec discover_components(keyword()) :: [map()]
+  def discover_components(opts \\ []) do
+    modules = Keyword.get(opts, :modules, [])
+
+    # Only check explicitly provided modules
+    # For precompilation, use CompileRegistry instead
+    modules
+    |> Enum.flat_map(fn mod ->
+      case Code.ensure_loaded(mod) do
+        {:module, _} ->
+          if function_exported?(mod, :style_capsule_spec, 0) do
+            try do
+              spec = mod.style_capsule_spec()
+              if spec && is_map(spec), do: [spec], else: []
+            rescue
+              _ -> []
+            end
+          else
+            []
+          end
+        {:error, _} ->
+          []
+      end
+    end)
+  end
 end

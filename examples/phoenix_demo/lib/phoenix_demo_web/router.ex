@@ -14,6 +14,9 @@ defmodule PhoenixDemoWeb.Router do
     pipe_through :browser
 
     live "/", PageLive, :index
+    live "/showcase", ShowcaseLive, :index
+    live "/business", BusinessLive, :index
+    live "/features", FeaturesLive, :index
+    live "/namespaces", NamespacesLive, :index
   end
 end
-

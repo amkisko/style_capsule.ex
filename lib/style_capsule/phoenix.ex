@@ -203,6 +203,25 @@ defmodule StyleCapsule.Phoenix do
       namespace: namespace,
       attrs: Keyword.get(opts, :attrs, [])
     )
+
+    # Emit telemetry for inline registrations (deduplicated globally)
+    module = Keyword.get(opts, :module)
+
+    if module && module != :unknown do
+      # Only emit if this is the first time we've seen this (module, capsule_id) globally
+      if StyleCapsule.Instrumentation.track_inline_logged(module, capsule_id) do
+        StyleCapsule.Instrumentation.component_registered(
+          module: module,
+          capsule_id: capsule_id,
+          namespace: namespace,
+          registry: :runtime,
+          registration_time_ms: 0,
+          source: :phoenix_register_inline
+        )
+      end
+    end
+
+    :ok
   end
 
   @doc """

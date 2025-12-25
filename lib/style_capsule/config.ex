@@ -125,4 +125,20 @@ defmodule StyleCapsule.Config do
   def include_comments do
     Application.get_env(:style_capsule, :include_comments, true)
   end
+
+  @doc """
+  Returns whether to track component render events via telemetry.
+
+  Defaults to `false` as render events can be noisy in high-traffic applications.
+  Enable for debugging or monitoring component usage patterns.
+
+  ## Configuration
+
+      config :style_capsule, :track_component_renders, true
+
+  """
+  @spec track_component_renders?() :: boolean()
+  def track_component_renders? do
+    Application.get_env(:style_capsule, :track_component_renders, false)
+  end
 end

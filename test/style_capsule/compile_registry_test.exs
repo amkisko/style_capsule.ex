@@ -270,5 +270,76 @@ defmodule StyleCapsule.CompileRegistryTest do
       our_spec = Enum.find(specs, fn s -> s.module == TestComponentNil end)
       assert our_spec != nil
     end
+
+    test "emits component_discovered telemetry event on register" do
+      test_pid = self()
+
+      handler = fn event, measurements, metadata, _config ->
+        send(test_pid, {:telemetry, event, measurements, metadata})
+      end
+
+      :telemetry.attach_many(
+        "test-compile-registry-telemetry",
+        [[:style_capsule, :component, :discovered]],
+        handler,
+        nil
+      )
+
+      spec = %{
+        module: TestComponentTelemetry,
+        capsule_id: "test12345678",
+        namespace: :test,
+        strategy: :patch,
+        cache_strategy: :none,
+        styles: ".test { color: red; }"
+      }
+
+      CompileRegistry.register(spec)
+
+      assert_receive {:telemetry, [:style_capsule, :component, :discovered], measurements, metadata}, 1000
+
+      assert measurements.module == TestComponentTelemetry
+      assert measurements.capsule_id == "test12345678"
+      assert measurements.namespace == :test
+      assert measurements.strategy == :patch
+      assert measurements.cache_strategy == :none
+      assert measurements.has_styles == true
+      assert measurements.discovery_type == :compile_time
+      assert metadata.source == :compile_registry
+
+      :telemetry.detach("test-compile-registry-telemetry")
+    end
+
+    test "emits component_discovered with has_styles false when styles are empty" do
+      test_pid = self()
+
+      handler = fn event, measurements, metadata, _config ->
+        send(test_pid, {:telemetry, event, measurements, metadata})
+      end
+
+      :telemetry.attach_many(
+        "test-compile-registry-no-styles",
+        [[:style_capsule, :component, :discovered]],
+        handler,
+        nil
+      )
+
+      spec = %{
+        module: TestComponentNoStyles,
+        capsule_id: "test12345678",
+        namespace: :test,
+        strategy: :patch,
+        cache_strategy: :none,
+        styles: ""
+      }
+
+      CompileRegistry.register(spec)
+
+      assert_receive {:telemetry, [:style_capsule, :component, :discovered], measurements, _metadata}, 1000
+
+      assert measurements.has_styles == false
+
+      :telemetry.detach("test-compile-registry-no-styles")
+    end
   end
 end

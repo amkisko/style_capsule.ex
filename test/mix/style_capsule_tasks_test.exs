@@ -81,6 +81,7 @@ defmodule Mix.Tasks.StyleCapsule.TasksTest do
 
       # Check that CSS file was created
       css_file = Path.join(tmp_dir, "style_capsules_test_build.css")
+
       if File.exists?(css_file) do
         content = File.read!(css_file)
         assert content =~ ".test"
@@ -245,7 +246,8 @@ defmodule Mix.Tasks.StyleCapsule.TasksTest do
         capsule_id: "wrong12345678",
         namespace: :test_build,
         strategy: :patch,
-        cache_strategy: :none, # Wrong - should be :file for precompilation
+        # Wrong - should be :file for precompilation
+        cache_strategy: :none,
         styles: ".test { color: red; }"
       }
 
@@ -438,7 +440,8 @@ defmodule Mix.Tasks.StyleCapsule.TasksTest do
         capsule_id: "wrong12345678",
         namespace: :test_build,
         strategy: :patch,
-        cache_strategy: :none, # Wrong - should be :file for precompilation
+        # Wrong - should be :file for precompilation
+        cache_strategy: :none,
         styles: ".test { color: red; }"
       }
 
@@ -527,6 +530,7 @@ defmodule Mix.Tasks.StyleCapsule.TasksTest do
       # Restore
       File.chmod!(tmp_readonly, 0o755)
       File.rm_rf!(tmp_readonly)
+
       if original_output do
         Application.put_env(:style_capsule, :output_dir, original_output)
       else

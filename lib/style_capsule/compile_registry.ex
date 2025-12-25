@@ -63,6 +63,19 @@ defmodule StyleCapsule.CompileRegistry do
     """
 
     File.write!(registry_path, content)
+
+    # Emit telemetry event
+    StyleCapsule.Instrumentation.component_discovered(
+      module: spec.module,
+      capsule_id: spec.capsule_id,
+      namespace: spec.namespace,
+      strategy: spec.strategy,
+      cache_strategy: spec.cache_strategy,
+      has_styles: spec.styles != nil && spec.styles != "" && String.trim(spec.styles || "") != "",
+      discovery_type: :compile_time,
+      source: :compile_registry
+    )
+
     :ok
   rescue
     e ->

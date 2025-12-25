@@ -21,8 +21,12 @@ config :phoenix_demo, PhoenixDemoWeb.Endpoint,
 
 config :logger, :console,
   format: "$time $metadata[$level] $message\n",
-  metadata: [:request_id]
+  metadata: [:request_id],
+  level: :info
 
 config :phoenix, :stacktrace_depth, 20
 config :phoenix, :plug_init_mode, :runtime
 
+# StyleCapsule telemetry configuration
+# Set to true to track component renders (can be noisy in high-traffic scenarios)
+config :style_capsule, :track_component_renders, false

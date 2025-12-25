@@ -134,7 +134,8 @@ defmodule StyleCapsule.Component do
             StyleCapsule.Phoenix.register_inline(styles, capsule_id,
               namespace: namespace,
               strategy: strategy,
-              cache_strategy: cache_strategy
+              cache_strategy: cache_strategy,
+              module: __MODULE__
             )
 
             # Wrap content
@@ -243,6 +244,9 @@ defmodule StyleCapsule.Component do
         module: nil
     end
 
+    render_start_time =
+      if StyleCapsule.Config.track_component_renders?(), do: System.monotonic_time(:microsecond), else: nil
+
     try do
       capsule_id = StyleCapsule.capsule_id(module)
 
@@ -297,7 +301,8 @@ defmodule StyleCapsule.Component do
 
             # Register styles
             try do
-              StyleCapsule.Phoenix.register_inline(styles, capsule_id, opts)
+              # Pass module in opts so telemetry can track it
+              StyleCapsule.Phoenix.register_inline(styles, capsule_id, Keyword.put(opts, :module, module))
             rescue
               # Silently handle errors - styles might already be registered
               _e -> :ok
@@ -312,6 +317,31 @@ defmodule StyleCapsule.Component do
       # Use HEEx template with conditional tag rendering for common tags
       assigns = assign(assigns, :capsule_id, capsule_id)
       assigns = assign(assigns, :tag, assigns.tag || :div)
+
+      # Emit telemetry event if render tracking is enabled
+      if render_start_time && StyleCapsule.Config.track_component_renders?() do
+        render_end_time = System.monotonic_time(:microsecond)
+        render_duration_ms = div(render_end_time - render_start_time, 1000)
+
+        namespace =
+          if function_exported?(module, :style_capsule_spec, 0) do
+            try do
+              spec = module.style_capsule_spec()
+              Map.get(spec, :namespace, :default)
+            rescue
+              _ -> :default
+            end
+          else
+            :default
+          end
+
+        StyleCapsule.Instrumentation.component_rendered(
+          module: module,
+          capsule_id: capsule_id,
+          namespace: namespace,
+          render_time_ms: render_duration_ms
+        )
+      end
 
       # Use HEEx with conditional rendering based on tag
       ~H"""

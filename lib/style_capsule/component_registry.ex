@@ -23,15 +23,44 @@ defmodule StyleCapsule.ComponentRegistry do
   Registers a component spec in the runtime registry.
   """
   def register(spec) when is_map(spec) do
-    Agent.update(__MODULE__, fn state ->
-      module = spec.module
+    start_time = System.monotonic_time(:microsecond)
 
-      # Store by module and deduplicate
-      components = Map.put(state.components, module, spec)
-      specs = [spec | Enum.reject(state.specs, &(&1.module == module))]
+    result =
+      Agent.update(__MODULE__, fn state ->
+        module = spec.module
 
-      %{state | components: components, specs: specs}
-    end)
+        # Store by module and deduplicate
+        components = Map.put(state.components, module, spec)
+        specs = [spec | Enum.reject(state.specs, &(&1.module == module))]
+
+        %{state | components: components, specs: specs}
+      end)
+
+    end_time = System.monotonic_time(:microsecond)
+    duration_ms = div(end_time - start_time, 1000)
+
+    # Emit telemetry events
+    StyleCapsule.Instrumentation.component_discovered(
+      module: spec.module,
+      capsule_id: spec.capsule_id,
+      namespace: spec.namespace,
+      strategy: spec.strategy,
+      cache_strategy: spec.cache_strategy,
+      has_styles: spec.styles != nil && spec.styles != "" && String.trim(spec.styles || "") != "",
+      discovery_type: :runtime,
+      source: :component_registry
+    )
+
+    StyleCapsule.Instrumentation.component_registered(
+      module: spec.module,
+      capsule_id: spec.capsule_id,
+      namespace: spec.namespace,
+      registry: :runtime,
+      registration_time_ms: duration_ms,
+      source: :component_registry
+    )
+
+    result
   end
 
   @doc """

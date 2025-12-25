@@ -178,5 +178,84 @@ defmodule StyleCapsule.ComponentRegistryTest do
       retrieved2 = ComponentRegistry.get(TestComponent2)
       assert retrieved2.capsule_id == "test22222222"
     end
+
+    test "emits component_discovered and component_registered telemetry events on register" do
+      test_pid = self()
+
+      handler = fn event, measurements, metadata, _config ->
+        send(test_pid, {:telemetry, event, measurements, metadata})
+      end
+
+      :telemetry.attach_many(
+        "test-component-registry-telemetry",
+        [
+          [:style_capsule, :component, :discovered],
+          [:style_capsule, :component, :registered]
+        ],
+        handler,
+        nil
+      )
+
+      spec = %{
+        module: TestComponentTelemetry,
+        capsule_id: "test12345678",
+        namespace: :test,
+        strategy: :patch,
+        cache_strategy: :none,
+        styles: ".test { color: red; }"
+      }
+
+      ComponentRegistry.register(spec)
+
+      # Should receive both events
+      events = receive_events(2, 1000)
+
+      discovered_event =
+        Enum.find(events, fn {_, event, _, _} ->
+          event == [:style_capsule, :component, :discovered]
+        end)
+
+      registered_event =
+        Enum.find(events, fn {_, event, _, _} ->
+          event == [:style_capsule, :component, :registered]
+        end)
+
+      assert discovered_event != nil
+      assert registered_event != nil
+
+      {_, _, discovered_measurements, discovered_metadata} = discovered_event
+      {_, _, registered_measurements, registered_metadata} = registered_event
+
+      # Check discovered event
+      assert discovered_measurements.module == TestComponentTelemetry
+      assert discovered_measurements.capsule_id == "test12345678"
+      assert discovered_measurements.namespace == :test
+      assert discovered_measurements.discovery_type == :runtime
+      assert discovered_metadata.source == :component_registry
+
+      # Check registered event
+      assert registered_measurements.module == TestComponentTelemetry
+      assert registered_measurements.capsule_id == "test12345678"
+      assert registered_measurements.registry == :runtime
+      assert registered_measurements.registration_time_ms >= 0
+      assert registered_metadata.source == :component_registry
+
+      :telemetry.detach("test-component-registry-telemetry")
+    end
+
+    defp receive_events(count, timeout) do
+      receive_events(count, timeout, [])
+    end
+
+    defp receive_events(0, _timeout, acc), do: Enum.reverse(acc)
+
+    defp receive_events(count, timeout, acc) do
+      receive do
+        {:telemetry, event, measurements, metadata} ->
+          receive_events(count - 1, timeout, [{:telemetry, event, measurements, metadata} | acc])
+      after
+        timeout -> Enum.reverse(acc)
+      end
+    end
   end
 end

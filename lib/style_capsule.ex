@@ -104,28 +104,56 @@ defmodule StyleCapsule do
   """
   @spec discover_components(keyword()) :: [map()]
   def discover_components(opts \\ []) do
+    start_time = System.monotonic_time(:microsecond)
     modules = Keyword.get(opts, :modules, [])
 
     # Only check explicitly provided modules
     # For precompilation, use CompileRegistry instead
-    modules
-    |> Enum.flat_map(fn mod ->
-      case Code.ensure_loaded(mod) do
-        {:module, _} ->
-          if function_exported?(mod, :style_capsule_spec, 0) do
-            try do
-              spec = mod.style_capsule_spec()
-              if spec && is_map(spec), do: [spec], else: []
-            rescue
-              _ -> []
+    result =
+      modules
+      |> Enum.flat_map(fn mod ->
+        case Code.ensure_loaded(mod) do
+          {:module, _} ->
+            if function_exported?(mod, :style_capsule_spec, 0) do
+              try do
+                spec = mod.style_capsule_spec()
+                if spec && is_map(spec), do: [spec], else: []
+              rescue
+                _ -> []
+              end
+            else
+              []
             end
-          else
-            []
-          end
 
-        {:error, _} ->
-          []
-      end
-    end)
+          {:error, _} ->
+            []
+        end
+      end)
+
+    end_time = System.monotonic_time(:microsecond)
+    duration_ms = div(end_time - start_time, 1000)
+
+    # Emit telemetry event
+    StyleCapsule.Instrumentation.discovery_operation(
+      operation: :discover_components,
+      modules_checked: length(modules),
+      components_found: length(result),
+      duration_ms: duration_ms,
+      success: true
+    )
+
+    result
+  rescue
+    e ->
+      # Emit failure event
+      StyleCapsule.Instrumentation.discovery_operation(
+        operation: :discover_components,
+        modules_checked: length(Keyword.get(opts, :modules, [])),
+        components_found: 0,
+        duration_ms: 0,
+        success: false
+      )
+
+      reraise e, __STACKTRACE__
   end
 end

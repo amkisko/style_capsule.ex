@@ -1381,9 +1381,6 @@ defmodule StyleCapsule.ComponentTest do
         """
       end
 
-      # Mock register_inline to raise an error
-      original_register = &StyleCapsule.Phoenix.register_inline/3
-
       try do
         assigns = %{
           __changed__: %{},

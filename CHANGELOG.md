@@ -1,5 +1,11 @@
 # CHANGELOG
 
+## 0.8.0
+
+- Updated Phoenix stack dependency versions
+- Silenced non-error test logging in test helper
+- Fixed HEEx examples in phoenix_demo LiveView
+
 ## 0.7.0
 
 - Added conditional namespace-based stylesheet loading via `:namespace` option in `render_precompiled_stylesheets/1`

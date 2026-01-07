@@ -48,7 +48,7 @@ defmodule PhoenixDemoWeb.PageLive do
 
           <PhoenixDemoWeb.Components.AdminPanel.admin_panel title="Admin Namespace Example">
             <p>This component uses the <code>:admin</code> namespace and <code>:nesting</code> strategy.</p>
-            <p>Notice how the styles are wrapped in <code>[data-capsule="..."] { ... }</code> instead of prefixing each selector.</p>
+            <p>Notice how the styles are wrapped in <code>{"[data-capsule=\"...\"] { ... }"}</code> instead of prefixing each selector.</p>
             <p class="text-sm text-gray-600 mt-2">This is ~3.4x faster than the patch strategy but requires modern browser support.</p>
           </PhoenixDemoWeb.Components.AdminPanel.admin_panel>
 

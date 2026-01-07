@@ -9,6 +9,7 @@ defmodule PhoenixDemo.MixProject do
       elixir_paths: elixir_paths(Mix.env()),
       compilers: Mix.compilers(),
       start_permanent: Mix.env() == :prod,
+      listeners: [Phoenix.CodeReloader],
       aliases: aliases(),
       deps: deps()
     ]
@@ -26,13 +27,13 @@ defmodule PhoenixDemo.MixProject do
 
   defp deps do
     [
-      {:phoenix, "~> 1.7.0"},
-      {:phoenix_live_view, "~> 0.20.0"},
-      {:phoenix_html, "~> 4.0"},
-      {:phoenix_live_reload, "~> 1.2", only: :dev},
-      {:gettext, "~> 0.20"},
-      {:jason, "~> 1.2"},
-      {:plug_cowboy, "~> 2.5"},
+      {:phoenix, "~> 1.8"},
+      {:phoenix_live_view, "~> 1.1"},
+      {:phoenix_html, "~> 4.3"},
+      {:phoenix_live_reload, "~> 1.4", only: :dev},
+      {:gettext, "~> 0.24"},
+      {:jason, "~> 1.4"},
+      {:plug_cowboy, "~> 2.7"},
       {:style_capsule, path: "../.."}
     ]
   end

@@ -68,24 +68,24 @@ defmodule PhoenixDemoWeb.FeaturesLive do
               </p>
               <div class="bg-gray-100 p-4 rounded text-sm font-mono">
                 <div class="text-gray-600">Input:</div>
-                <div>.button { color: blue; }</div>
+                <div>{".button { color: blue; }"}</div>
                 <div class="text-gray-600 mt-2">Output:</div>
-                <div>[data-capsule="abc123"] .button { color: blue; }</div>
+                <div>{"[data-capsule=\"abc123\"] .button { color: blue; }"}</div>
               </div>
             </PhoenixDemoWeb.Components.Card.card>
 
             <PhoenixDemoWeb.Components.AdminPanel.admin_panel title="Nesting Strategy">
               <p class="mb-4">
-                The nesting strategy wraps all styles in a single <code class="bg-gray-100 px-1 rounded">[data-capsule="..."] { ... }</code> block.
+                The nesting strategy wraps all styles in a single <code class="bg-gray-100 px-1 rounded">{"[data-capsule=\"...\"] { ... }"}</code> block.
                 This is ~3.4x faster but requires modern browser support for CSS Nesting.
               </p>
               <div class="bg-gray-100 p-4 rounded text-sm font-mono">
                 <div class="text-gray-600">Input:</div>
-                <div>.button { color: blue; }</div>
+                <div>{".button { color: blue; }"}</div>
                 <div class="text-gray-600 mt-2">Output:</div>
-                <div>[data-capsule="abc123"] {</div>
-                <div class="pl-4">.button { color: blue; }</div>
-                <div>}</div>
+                <div>{"[data-capsule=\"abc123\"] \\{"}</div>
+                <div class="pl-4">{".button { color: blue; }"}</div>
+                <div>{"\\}"}</div>
               </div>
             </PhoenixDemoWeb.Components.AdminPanel.admin_panel>
           </div>
@@ -217,7 +217,7 @@ defmodule PhoenixDemoWeb.FeaturesLive do
               <div class="bg-gray-900 text-gray-100 p-4 rounded text-sm font-mono overflow-x-auto">
                 <div class="text-purple-300">@component_styles</div>
                 <div class="text-yellow-300">"""</div>
-                <div class="text-green-300">.root { padding: 1rem; }</div>
+                <div class="text-green-300">{".root { padding: 1rem; }"}</div>
                 <div class="text-yellow-300">"""</div>
               </div>
             </PhoenixDemoWeb.Components.Card.card>

@@ -8,22 +8,7 @@ on:
 jobs:
   coverage:
     runs-on: ubuntu-latest
-    services:
-      postgres:
-        image: postgres:15
-        env:
-          POSTGRES_USER: postgres
-          POSTGRES_PASSWORD: postgres
-          POSTGRES_DB: good_job_test
-        options: >-
-          --health-cmd pg_isready
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 5
-        ports:
-          - 5432:5432
     env:
-      DATABASE_URL: postgres://postgres:postgres@localhost:5432/good_job_test
       ELIXIR_VERSION: "1.18"
       OTP_VERSION: "27"
       MIX_ENV: test
@@ -49,7 +34,6 @@ jobs:
             ${{ runner.os }}-beam-
       - run: mix deps.get
       - run: mix deps.compile
-      - run: mix test.setup
       - run: mix coveralls.json
       - uses: codecov/codecov-action@v5
         with:

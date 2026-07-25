@@ -1,18 +1,18 @@
 defmodule StyleCapsule.PhlexComponentTest do
   use ExUnit.Case, async: false
 
-  alias StyleCapsule.{CompileRegistry, PhlexComponent, Registry}
+  alias StyleCapsule.{CompileRegistry, PhlexComponent, StylesheetRegistry}
 
   # Check if Phlex is available
   @phlex_available Code.ensure_loaded?(Phlex.HTML)
 
   setup do
     # Clear registries before each test
-    Registry.clear()
+    StylesheetRegistry.clear()
     CompileRegistry.clear()
 
     on_exit(fn ->
-      Registry.clear()
+      StylesheetRegistry.clear()
       CompileRegistry.clear()
     end)
 
@@ -163,7 +163,7 @@ defmodule StyleCapsule.PhlexComponentTest do
 
         # Check that styles were registered
         capsule_id = StyleCapsule.capsule_id(TestPhlexComponentRuntime)
-        styles = Registry.get_inline_styles(:default)
+        styles = StylesheetRegistry.get_inline_styles(:default)
         component_style = Enum.find(styles, fn s -> s.id == capsule_id end)
 
         assert component_style != nil
@@ -188,7 +188,7 @@ defmodule StyleCapsule.PhlexComponentTest do
 
         # Check that styles were registered
         capsule_id = StyleCapsule.capsule_id(TestPhlexComponentTime)
-        styles = Registry.get_inline_styles(:default)
+        styles = StylesheetRegistry.get_inline_styles(:default)
         component_style = Enum.find(styles, fn s -> s.id == capsule_id end)
 
         assert component_style != nil
@@ -213,7 +213,7 @@ defmodule StyleCapsule.PhlexComponentTest do
 
         # Check that styles were NOT registered at runtime
         capsule_id = StyleCapsule.capsule_id(TestPhlexComponentFile)
-        styles = Registry.get_inline_styles(:default)
+        styles = StylesheetRegistry.get_inline_styles(:default)
         component_style = Enum.find(styles || [], fn s -> s.id == capsule_id end)
 
         assert component_style == nil

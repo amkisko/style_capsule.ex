@@ -67,13 +67,17 @@ defmodule StyleCapsuleTest do
       assert length(result) == 1
       assert hd(result).module == TestComponentForDiscovery
 
-      assert_receive {:telemetry, [:style_capsule, :discovery, :operation], measurements, metadata}, 1000
+      assert_receive {:telemetry, [:style_capsule, :discovery, :operation],
+                      %{
+                        operation: :discover_components,
+                        modules_checked: 1,
+                        components_found: 1,
+                        success: true,
+                        duration_ms: duration_ms
+                      }, metadata},
+                     1000
 
-      assert measurements.operation == :discover_components
-      assert measurements.modules_checked == 1
-      assert measurements.components_found == 1
-      assert measurements.success == true
-      assert measurements.duration_ms >= 0
+      assert duration_ms >= 0
       assert is_integer(metadata.timestamp)
 
       :telemetry.detach("test-discover-components-telemetry")
@@ -117,11 +121,13 @@ defmodule StyleCapsuleTest do
 
       assert length(result) == 2
 
-      assert_receive {:telemetry, [:style_capsule, :discovery, :operation], measurements, _metadata}, 1000
-
-      assert measurements.modules_checked == 4
-      assert measurements.components_found == 2
-      assert measurements.success == true
+      assert_receive {:telemetry, [:style_capsule, :discovery, :operation],
+                      %{
+                        modules_checked: 4,
+                        components_found: 2,
+                        success: true
+                      }, _metadata},
+                     1000
 
       :telemetry.detach("test-discover-components-counts")
     end

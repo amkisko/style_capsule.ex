@@ -1,5 +1,16 @@
 # CHANGELOG
 
+## Unreleased
+
+- Renamed `StyleCapsule.Registry` to `StyleCapsule.StylesheetRegistry` (aligns with Ruby `StylesheetRegistry`)
+- `StyleCapsule.Registry` remains as a deprecated delegate for one release
+- Moved `preferred_cli_env` to `def cli/0` (Mix 1.19)
+- Updated dependencies (`castore`, `erlex`, `plug_crypto`)
+- Fixed flaky discovery telemetry tests under parallel ExUnit
+- README: codecov badge, sponsors, contribution policy, security section, version pin `~> 0.8.0`
+- CI: JUnit test results upload to Codecov (`junit_formatter`, `coverage/junit-coverage.xml`)
+- Release: extracted `usr/lib/release_version_check.ex`, `Makefile` release target
+
 ## 0.8.0
 
 - Updated Phoenix stack dependency versions

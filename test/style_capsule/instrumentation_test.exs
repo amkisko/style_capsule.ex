@@ -230,13 +230,15 @@ defmodule StyleCapsule.InstrumentationTest do
         success: true
       )
 
-      assert_receive {:telemetry, [:style_capsule, :discovery, :operation], measurements, metadata}
+      assert_receive {:telemetry, [:style_capsule, :discovery, :operation],
+                      %{
+                        operation: :discover_components,
+                        modules_checked: 10,
+                        components_found: 5,
+                        duration_ms: 15,
+                        success: true
+                      }, metadata}
 
-      assert measurements.operation == :discover_components
-      assert measurements.modules_checked == 10
-      assert measurements.components_found == 5
-      assert measurements.duration_ms == 15
-      assert measurements.success == true
       assert is_integer(metadata.timestamp)
 
       :telemetry.detach("test-discovery-operation")
@@ -258,12 +260,14 @@ defmodule StyleCapsule.InstrumentationTest do
 
       Instrumentation.discovery_operation(operation: :discover_components)
 
-      assert_receive {:telemetry, [:style_capsule, :discovery, :operation], measurements, _metadata}
-
-      assert measurements.modules_checked == 0
-      assert measurements.components_found == 0
-      assert measurements.duration_ms == 0
-      assert measurements.success == true
+      assert_receive {:telemetry, [:style_capsule, :discovery, :operation],
+                      %{
+                        operation: :discover_components,
+                        modules_checked: 0,
+                        components_found: 0,
+                        duration_ms: 0,
+                        success: true
+                      }, _metadata}
 
       :telemetry.detach("test-discovery-operation-defaults")
     end
@@ -290,10 +294,13 @@ defmodule StyleCapsule.InstrumentationTest do
         success: false
       )
 
-      assert_receive {:telemetry, [:style_capsule, :discovery, :operation], measurements, _metadata}
-
-      assert measurements.success == false
-      assert measurements.components_found == 0
+      assert_receive {:telemetry, [:style_capsule, :discovery, :operation],
+                      %{
+                        operation: :discover_components,
+                        modules_checked: 5,
+                        components_found: 0,
+                        success: false
+                      }, _metadata}
 
       :telemetry.detach("test-discovery-operation-failure")
     end

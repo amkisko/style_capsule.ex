@@ -9,11 +9,11 @@ defmodule StyleCapsule.FunctionComponentTest do
   """
   use ExUnit.Case, async: false
 
-  alias StyleCapsule.{Component, Registry}
+  alias StyleCapsule.{Component, StylesheetRegistry}
   alias StyleCapsule.Phoenix, as: PhoenixHelper
 
   setup do
-    Registry.clear()
+    StylesheetRegistry.clear()
     :ok
   end
 
@@ -128,7 +128,7 @@ defmodule StyleCapsule.FunctionComponentTest do
       end
 
       # Check that styles were registered
-      styles = Registry.get_inline_styles(:test)
+      styles = StylesheetRegistry.get_inline_styles(:test)
       assert not Enum.empty?(styles)
 
       # Find the style for this component
@@ -154,7 +154,7 @@ defmodule StyleCapsule.FunctionComponentTest do
       end
 
       # Check that styles were registered in the correct namespace
-      styles = Registry.get_inline_styles(:test_nesting)
+      styles = StylesheetRegistry.get_inline_styles(:test_nesting)
       assert not Enum.empty?(styles)
 
       capsule_id = StyleCapsule.capsule_id(TestFunctionComponentNesting)
@@ -179,7 +179,7 @@ defmodule StyleCapsule.FunctionComponentTest do
       end
 
       # Styles should still be registered even with time cache strategy
-      styles = Registry.get_inline_styles(:test_cache)
+      styles = StylesheetRegistry.get_inline_styles(:test_cache)
       assert not Enum.empty?(styles)
     end
 
@@ -198,7 +198,7 @@ defmodule StyleCapsule.FunctionComponentTest do
       end
 
       # No styles should be registered
-      styles = Registry.get_inline_styles(:test)
+      styles = StylesheetRegistry.get_inline_styles(:test)
       capsule_id = StyleCapsule.capsule_id(TestFunctionComponentNoStyles)
       component_style = Enum.find(styles || [], fn s -> s.id == capsule_id end)
       assert component_style == nil
@@ -222,8 +222,8 @@ defmodule StyleCapsule.FunctionComponentTest do
       end)
 
       # Both namespaces should have styles
-      test_styles = Registry.get_inline_styles(:test)
-      nesting_styles = Registry.get_inline_styles(:test_nesting)
+      test_styles = StylesheetRegistry.get_inline_styles(:test)
+      nesting_styles = StylesheetRegistry.get_inline_styles(:test_nesting)
 
       assert not Enum.empty?(test_styles)
       assert not Enum.empty?(nesting_styles)
@@ -255,13 +255,13 @@ defmodule StyleCapsule.FunctionComponentTest do
     end
 
     test "returns empty string when no styles registered" do
-      Registry.clear()
+      StylesheetRegistry.clear()
       html = PhoenixHelper.render_all_runtime_styles()
       assert html == ""
     end
 
     test "handles mixed namespaces correctly" do
-      Registry.clear()
+      StylesheetRegistry.clear()
 
       # Register in different namespaces
       PhoenixHelper.register_inline(".admin { color: red; }", "admin12345", namespace: :admin)
@@ -291,7 +291,7 @@ defmodule StyleCapsule.FunctionComponentTest do
         _ -> :ok
       end
 
-      styles = Registry.get_inline_styles(:test)
+      styles = StylesheetRegistry.get_inline_styles(:test)
       capsule_id = StyleCapsule.capsule_id(TestFunctionComponent)
       component_style = Enum.find(styles, fn s -> s.id == capsule_id end)
 
@@ -313,7 +313,7 @@ defmodule StyleCapsule.FunctionComponentTest do
         _ -> :ok
       end
 
-      styles = Registry.get_inline_styles(:test_nesting)
+      styles = StylesheetRegistry.get_inline_styles(:test_nesting)
       capsule_id = StyleCapsule.capsule_id(TestFunctionComponentNesting)
       component_style = Enum.find(styles, fn s -> s.id == capsule_id end)
 

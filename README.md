@@ -1,6 +1,6 @@
 # style_capsule
 
-[![Hex.pm](https://img.shields.io/hexpm/v/style_capsule)](https://hex.pm/packages/style_capsule) [![Hex.pm](https://img.shields.io/hexpm/dt/style_capsule)](https://hex.pm/packages/style_capsule) [![Test Status](https://github.com/amkisko/style_capsule.ex/actions/workflows/test.yml/badge.svg)](https://github.com/amkisko/style_capsule.ex/actions/workflows/test.yml)
+[![Hex.pm](https://img.shields.io/hexpm/v/style_capsule)](https://hex.pm/packages/style_capsule) [![Hex.pm](https://img.shields.io/hexpm/dt/style_capsule)](https://hex.pm/packages/style_capsule) [![Test Status](https://github.com/amkisko/style_capsule.ex/actions/workflows/test.yml/badge.svg)](https://github.com/amkisko/style_capsule.ex/actions/workflows/test.yml) [![codecov](https://codecov.io/gh/amkisko/style_capsule.ex/graph/badge.svg)](https://app.codecov.io/github/amkisko/style_capsule.ex)
 
 CSS scoping extension for Elixir/Phoenix components. Provides attribute-based style encapsulation for Phoenix LiveView components and standalone Elixir applications to prevent style leakage between components. Works with Phoenix and can be used standalone in other Elixir frameworks or plain Elixir scripts. Includes configurable caching strategies for optimal performance.
 
@@ -26,7 +26,7 @@ Add `style_capsule` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:style_capsule, "~> 0.7.0"}
+    {:style_capsule, "~> 0.8.0"}
   ]
 end
 ```
@@ -282,6 +282,24 @@ Bug reports and pull requests are welcome on GitHub at https://github.com/amkisk
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 
+Contribution policy:
+- New features are not necessarily added to the library
+- Pull requests should have test coverage and changelog entry
+
+Review policy:
+- Critical fixes: up to 2 calendar weeks
+- Pull requests: up to 6 calendar months
+- Issues: up to 1 calendar year
+
+## Security
+
+StyleCapsule includes security protections:
+- Path traversal protection
+- Input validation
+- Size limits (1MB per component)
+
+For detailed security information, see [SECURITY.md](SECURITY.md).
+
 ## Requirements
 
 - Elixir >= 1.18
@@ -303,3 +321,11 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 ## License
 
 The library is available as open source under the terms of the [MIT License](LICENSE.md).
+
+## Sponsors
+
+Sponsored by [Kisko Labs](https://www.kiskolabs.com).
+
+<a href="https://www.kiskolabs.com">
+  <img src="kisko.svg" width="200" alt="Sponsored by Kisko Labs" />
+</a>

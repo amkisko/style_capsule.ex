@@ -368,7 +368,7 @@ defmodule StyleCapsule.ComponentTest do
 
       # Check styles were registered (render/1 override should register styles)
       capsule_id = StyleCapsule.capsule_id(TestComponentWithRender)
-      styles = StyleCapsule.Registry.get_inline_styles(:test_render)
+      styles = StyleCapsule.StylesheetRegistry.get_inline_styles(:test_render)
       component_style = Enum.find(styles || [], fn s -> s.id == capsule_id end)
 
       # Styles may or may not be registered depending on render/1 implementation
@@ -985,7 +985,7 @@ defmodule StyleCapsule.ComponentTest do
 
       # Check that no styles were registered
       capsule_id = StyleCapsule.capsule_id(TestComponentRenderEmptyStyles)
-      styles = StyleCapsule.Registry.get_inline_styles(:default)
+      styles = StyleCapsule.StylesheetRegistry.get_inline_styles(:default)
       component_style = Enum.find(styles || [], fn s -> s.id == capsule_id end)
       assert component_style == nil
     end

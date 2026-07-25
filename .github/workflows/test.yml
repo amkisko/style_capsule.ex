@@ -12,6 +12,7 @@ jobs:
       ELIXIR_VERSION: "1.18"
       OTP_VERSION: "27"
       MIX_ENV: test
+      CI: true
     steps:
       - uses: actions/checkout@v7
       - uses: erlef/setup-beam@v1
@@ -36,9 +37,17 @@ jobs:
       - run: mix deps.compile
       - run: mix coveralls.json
       - uses: codecov/codecov-action@v7
+        continue-on-error: true
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./cover/excoveralls.json
           flags: unittests
           name: codecov-umbrella
           fail_ci_if_error: false
+      - uses: codecov/codecov-action@v7
+        if: ${{ !cancelled() }}
+        continue-on-error: true
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          report_type: test_results
+          files: coverage/junit-coverage.xml

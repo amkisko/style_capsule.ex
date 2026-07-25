@@ -1,10 +1,10 @@
 defmodule StyleCapsule.PhoenixIntegrationTest do
   use ExUnit.Case, async: false
 
-  alias StyleCapsule.{Phoenix, Registry}
+  alias StyleCapsule.{Phoenix, StylesheetRegistry}
 
   setup do
-    Registry.clear()
+    StylesheetRegistry.clear()
     :ok
   end
 
@@ -80,13 +80,13 @@ defmodule StyleCapsule.PhoenixIntegrationTest do
     end
 
     test "render_all_runtime_styles returns empty when no styles" do
-      Registry.clear()
+      StylesheetRegistry.clear()
       html = Phoenix.render_all_runtime_styles()
       assert html == ""
     end
 
     test "render_all_runtime_styles includes all cache strategies" do
-      Registry.clear()
+      StylesheetRegistry.clear()
 
       # Register with different cache strategies
       Phoenix.register_inline(".none { color: red; }", "none_id12", namespace: :test, cache_strategy: :none)
@@ -100,7 +100,7 @@ defmodule StyleCapsule.PhoenixIntegrationTest do
     end
 
     test "render_styles with empty namespace returns empty string" do
-      Registry.clear()
+      StylesheetRegistry.clear()
       html = Phoenix.render_styles(namespace: :empty)
       assert html == ""
     end
@@ -182,7 +182,7 @@ defmodule StyleCapsule.PhoenixIntegrationTest do
     end
 
     test "render_styles filters empty strings" do
-      Registry.clear()
+      StylesheetRegistry.clear()
       html = Phoenix.render_styles(namespace: :test)
       assert html == ""
     end

@@ -15,14 +15,6 @@ defmodule StyleCapsule.MixProject do
       description: description(),
       docs: docs(),
       aliases: aliases(),
-      preferred_cli_env: [
-        coveralls: :test,
-        "coveralls.json": :test,
-        "coveralls.html": :test,
-        "test.all": :test,
-        credo: :test,
-        dialyzer: :test
-      ],
       dialyzer: [
         # Include Mix so Dialyzer knows about Mix.Task and Mix.shell
         plt_add_apps: [:mix],
@@ -37,6 +29,21 @@ defmodule StyleCapsule.MixProject do
   def application do
     [
       extra_applications: [:logger, :crypto]
+    ]
+  end
+
+  def cli do
+    [
+      preferred_envs: [
+        coveralls: :test,
+        "coveralls.json": :test,
+        "coveralls.html": :test,
+        "test.all": :test,
+        credo: :test,
+        dialyzer: :test,
+        quality: :test,
+        ci: :test
+      ]
     ]
   end
 
@@ -57,6 +64,7 @@ defmodule StyleCapsule.MixProject do
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
       {:ex_doc, "~> 0.40", only: :dev, runtime: false},
       {:excoveralls, "~> 0.18", only: :test, runtime: false},
+      {:junit_formatter, "~> 3.4", only: :test, runtime: false},
       {:castore, "~> 1.0", only: :test, runtime: false},
       {:benchee, "~> 1.5", only: :dev, runtime: false},
       {:benchee_html, "~> 1.0", only: :dev, runtime: false}

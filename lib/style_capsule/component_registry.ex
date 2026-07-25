@@ -3,7 +3,7 @@ defmodule StyleCapsule.ComponentRegistry do
   Runtime registry for StyleCapsule components using an Agent.
 
   This provides a shared, persistent registry that works across processes,
-  unlike the process-local Registry. Components can register themselves
+  unlike the process-local StylesheetRegistry. Components can register themselves
   at runtime when first rendered, and the registry persists across requests.
 
   For precompilation, components should use compile-time registration.

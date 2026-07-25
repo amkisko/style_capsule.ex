@@ -21,8 +21,8 @@ defmodule StyleCapsule.Phoenix do
   def render_styles(opts \\ []) do
     namespace = Keyword.get(opts, :namespace, :default)
 
-    inline_styles = StyleCapsule.Registry.get_inline_styles(namespace)
-    stylesheet_links = StyleCapsule.Registry.get_stylesheet_links(namespace)
+    inline_styles = StyleCapsule.StylesheetRegistry.get_inline_styles(namespace)
+    stylesheet_links = StyleCapsule.StylesheetRegistry.get_stylesheet_links(namespace)
 
     [
       render_inline_styles(inline_styles),
@@ -48,7 +48,7 @@ defmodule StyleCapsule.Phoenix do
   @spec render_all_runtime_styles() :: binary()
   def render_all_runtime_styles do
     # Get all namespaces dynamically from the registry
-    namespaces = StyleCapsule.Registry.get_all_namespaces()
+    namespaces = StyleCapsule.StylesheetRegistry.get_all_namespaces()
 
     # Collect all styles from all namespaces
     all_styles =
@@ -199,7 +199,7 @@ defmodule StyleCapsule.Phoenix do
         namespace: namespace
       )
 
-    StyleCapsule.Registry.register_inline(scoped_css, capsule_id,
+    StyleCapsule.StylesheetRegistry.register_inline(scoped_css, capsule_id,
       namespace: namespace,
       attrs: Keyword.get(opts, :attrs, [])
     )
@@ -239,7 +239,7 @@ defmodule StyleCapsule.Phoenix do
   """
   @spec register_stylesheet(binary(), keyword()) :: :ok
   def register_stylesheet(href, opts \\ []) do
-    StyleCapsule.Registry.register_stylesheet(href, opts)
+    StyleCapsule.StylesheetRegistry.register_stylesheet(href, opts)
   end
 
   # Private functions

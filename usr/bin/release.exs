@@ -1,106 +1,95 @@
 #!/usr/bin/env elixir
 
-Mix.install([])
-
-:inets.start()
-:ssl.start()
+Code.require_file(Path.expand("../lib/release_version_check.ex", __DIR__))
 
 defmodule ReleaseScript do
-  @moduledoc """
-  Release script that ensures quality, runs tests, and publishes to Hex.
-  Similar to the Ruby version's usr/bin/release.rb
-  """
+  @moduledoc false
 
   def run do
     IO.puts("\n🔍 Running quality checks...\n")
 
-    # Change to project directory
     project_dir = Path.expand(__DIR__ <> "/../../")
     File.cd!(project_dir)
 
-    # Run formatter
     IO.puts("📝 Formatting code...")
+
     unless run_command("mix format --check-formatted") do
       IO.puts("⚠️  Code is not formatted. Running formatter...")
       run_command("mix format")
     end
 
-    # Run Credo
     IO.puts("\n🔍 Running Credo (code analysis)...")
+
     unless run_command("mix credo --strict") do
       IO.puts("❌ Credo found issues. Please fix them before releasing.")
       System.halt(1)
     end
 
-    # Run Dialyzer
     IO.puts("\n🔍 Running Dialyzer (type checking)...")
+
     unless run_command("mix dialyzer") do
       IO.puts("⚠️  Dialyzer found issues. Review them before releasing.")
     end
 
-    # Run tests
     IO.puts("\n🧪 Running tests...")
+
     unless run_command("MIX_ENV=test mix coveralls.json") do
       IO.puts("❌ Tests failed. Please fix them before releasing.")
       System.halt(1)
     end
 
-    # Check git status
     IO.puts("\n📋 Checking git status...")
-    git_status = System.cmd("git", ["status", "--porcelain"], stderr_to_stdout: true)
-    if git_status != {"", 0} do
-      {output, _} = git_status
-      unless String.trim(output) == "" do
-        IO.puts("\n❌ Git working directory not clean. Please commit your changes first.")
-        IO.puts("Note: mix format may have modified files. Review and commit changes before releasing.")
-        System.halt(1)
-      end
+
+    {output, exit_code} = System.cmd("git", ["status", "--porcelain"], stderr_to_stdout: true)
+
+    if exit_code != 0 or String.trim(output) != "" do
+      IO.puts("\n❌ Git working directory not clean. Please commit your changes first.")
+      IO.puts("Note: mix format may have modified files. Review and commit changes before releasing.")
+      System.halt(1)
     end
 
-    # Get version from mix.exs
-    version = extract_version_from_file("mix.exs")
-
-    if version do
-      package_name = "style_capsule"
-      hex_file = "#{package_name}-#{version}.tar"
-
-      warn_if_already_released(version, package_name)
-
-      IO.puts("\n📦 Building package...")
-      unless run_command("mix hex.build") do
-        IO.puts("❌ Failed to build package.")
+    case extract_version_from_file("mix.exs") do
+      nil ->
+        IO.puts("❌ Could not determine version from mix.exs")
         System.halt(1)
-      end
 
-      IO.puts("\n✅ Ready to release #{hex_file} v#{version}")
-      IO.write("Continue? [Y/n] ")
-      answer = IO.gets("") |> String.trim()
+      version ->
+        package_name = "style_capsule"
+        hex_file = "#{package_name}-#{version}.tar"
 
-      unless answer == "Y" || answer == "" do
-        IO.puts("Exiting")
-        System.halt(0)
-      end
+        ReleaseVersionCheck.warn_if_already_released(version, package_name, :hex)
 
-      # Publish to Hex
-      IO.puts("\n📤 Publishing to Hex...")
-      unless run_command("mix hex.publish") do
-        IO.puts("❌ Failed to publish to Hex.")
-        System.halt(1)
-      end
+        IO.puts("\n📦 Building package...")
 
-      # Create git tag
-      IO.puts("\n🏷️  Creating git tag...")
-      run_command("git tag v#{version}")
-      run_command("git push --tags")
+        unless run_command("mix hex.build") do
+          IO.puts("❌ Failed to build package.")
+          System.halt(1)
+        end
 
-      # Create GitHub release (if gh CLI is available)
-      IO.puts("\n🚀 Creating GitHub release...")
-      run_command("gh release create v#{version} --generate-notes", allow_failure: true)
+        IO.puts("\n✅ Ready to release #{hex_file} v#{version}")
+        IO.write("Continue? [Y/n] ")
+        answer = IO.gets("") |> String.trim()
 
-      IO.puts("\n✅ Release complete! v#{version}")
-    else
-      IO.puts("❌ Could not determine version from mix.exs")
-      System.halt(1)
+        unless answer == "Y" || answer == "" do
+          IO.puts("Exiting")
+          System.halt(0)
+        end
+
+        IO.puts("\n📤 Publishing to Hex...")
+
+        unless run_command("mix hex.publish") do
+          IO.puts("❌ Failed to publish to Hex.")
+          System.halt(1)
+        end
+
+        IO.puts("\n🏷️  Creating git tag...")
+        run_command("git tag v#{version}")
+        run_command("git push --tags")
+
+        IO.puts("\n🚀 Creating GitHub release...")
+        run_command("gh release create v#{version} --generate-notes", allow_failure: true)
+
+        IO.puts("\n✅ Release complete! v#{version}")
     end
   end
 
@@ -115,54 +104,31 @@ defmodule ReleaseScript do
       unless String.trim(output) == "" do
         IO.write(output)
       end
+
       true
     else
       unless allow_failure do
         IO.write(output)
       end
+
       false
     end
-  end
-
-  defp warn_if_already_released(version, package_name) do
-    warnings = []
-    warnings = if existing_git_tags(version) != [], do: warnings ++ ["git tag exists (#{Enum.join(existing_git_tags(version), ", ")})"], else: warnings
-    warnings = if hex_version_exists?(version, package_name), do: warnings ++ ["Hex has version #{version}"], else: warnings
-
-    unless warnings == [] do
-      IO.puts("\n\033[1;33mWarning: version #{version} may already be released (#{Enum.join(warnings, "; ")}).\033[0m")
-    end
-  end
-
-  defp existing_git_tags(version) do
-    Enum.filter([version, "v#{version}"], fn tag ->
-      {_, exit_code} = System.cmd("git", ["rev-parse", "--verify", "refs/tags/#{tag}"], stderr_to_stdout: true)
-      exit_code == 0
-    end)
-  end
-
-  defp hex_version_exists?(version, package_name) do
-    case :httpc.request(:get, {'https://hex.pm/api/packages/#{package_name}/releases/#{version}', []}, [{:timeout, 5000}], []) do
-      {:ok, {{_, 200, _}, _, _}} -> true
-      _ -> false
-    end
-  rescue
-    _ -> false
   end
 
   defp extract_version_from_file(filename) do
     case File.read(filename) do
       {:ok, content} ->
-        # Try to match @version "..." first (module attribute)
         case Regex.run(~r/@version\s+"([^"]+)"/, content) do
-          [_, version] -> version
+          [_, version] ->
+            version
+
           _ ->
-            # Fallback to version: "..." in project list
             case Regex.run(~r/version:\s*"([^"]+)"/, content) do
               [_, version] -> version
               _ -> nil
             end
         end
+
       _ ->
         nil
     end

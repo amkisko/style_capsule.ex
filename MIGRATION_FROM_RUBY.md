@@ -259,10 +259,10 @@ end
 - **Ruby**: Standard Rails request/response cycle
 - **Elixir**: Phoenix LiveView with server-side rendering and optional client hooks
 
-### 5. Registry Scope
+### 5. Stylesheet registry scope
 
-- **Ruby**: Request-scoped via `ActionDispatch::Request`
-- **Elixir**: Process-local via `Process.put/get` (works for both HTTP and LiveView)
+- **Ruby**: Request-scoped via `StyleCapsule::StylesheetRegistry` and `ActionDispatch::Request`
+- **Elixir**: Process-local via `StyleCapsule.StylesheetRegistry` (`Process.put/get`; works for HTTP and LiveView)
 
 ## Migration Steps
 

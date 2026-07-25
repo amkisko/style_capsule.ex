@@ -228,20 +228,7 @@ defmodule StyleCapsule.CompileRegistry do
         |> Enum.map(fn {app, _description, _version} ->
           try do
             app_dir = Application.app_dir(app)
-            # Navigate from _build/dev/lib/app_name/ebin to project root
-            # Path structure: _build/dev/lib/app_name/ebin
-            project_root =
-              app_dir
-              # Remove ebin -> _build/dev/lib/app_name
-              |> Path.dirname()
-              # Remove lib/app_name -> _build/dev/lib
-              |> Path.dirname()
-              # Remove lib -> _build/dev
-              |> Path.dirname()
-              # Remove _build/dev -> _build
-              |> Path.dirname()
-              # Remove _build -> project root
-              |> Path.dirname()
+            project_root = project_root_from_app_dir(app_dir)
 
             registry_path = Path.join([project_root, "priv", @registry_file])
 
@@ -278,20 +265,7 @@ defmodule StyleCapsule.CompileRegistry do
       if app do
         try do
           app_dir = Application.app_dir(app)
-
-          project_root =
-            app_dir
-            # Remove ebin
-            |> Path.dirname()
-            # Remove lib/app_name
-            |> Path.dirname()
-            # Remove lib
-            |> Path.dirname()
-            # Remove _build/dev (or _build/prod)
-            |> Path.dirname()
-            # Remove _build
-            |> Path.dirname()
-
+          project_root = project_root_from_app_dir(app_dir)
           project_priv = Path.join([project_root, "priv"])
           Path.join([project_priv, @registry_file])
         rescue
@@ -301,6 +275,15 @@ defmodule StyleCapsule.CompileRegistry do
         fallback_registry_path()
       end
     end
+  end
+
+  defp project_root_from_app_dir(app_dir) do
+    # app_dir is _build/<env>/lib/<app_name>
+    app_dir
+    |> Path.dirname()
+    |> Path.dirname()
+    |> Path.dirname()
+    |> Path.dirname()
   end
 
   defp fallback_registry_path do

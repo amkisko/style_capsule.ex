@@ -30,8 +30,8 @@ defmodule PhoenixDemo.MixProject do
       {:phoenix, "~> 1.8"},
       {:phoenix_live_view, "~> 1.1"},
       {:phoenix_html, "~> 4.3"},
-      {:phoenix_live_reload, "~> 1.4", only: :dev},
-      {:gettext, "~> 0.24"},
+      {:phoenix_live_reload, "~> 1.4", only: [:dev, :test]},
+      {:gettext, "~> 1.0"},
       {:jason, "~> 1.4"},
       {:plug_cowboy, "~> 2.7"},
       {:style_capsule, path: "../.."}

@@ -288,6 +288,18 @@ See [CONTRIBUTING.md](CONTRIBUTING.md) for guidelines.
 - Phoenix >= 1.7 (optional, for Phoenix integration)
 - Phoenix LiveView >= 0.20 (optional, for LiveView integration)
 
+## Links
+
+- [GitHub](https://github.com/amkisko/style_capsule.ex)
+- [GitLab](https://gitlab.com/amkisko/style_capsule.ex)
+- [Hex](https://hex.pm/packages/style_capsule)
+- [libraries.io](https://libraries.io/hex/style_capsule)
+- [Deps.dev](https://deps.dev/hex/style_capsule)
+- [SonarCloud](https://sonarcloud.io/project/overview?id=amkisko_style_capsule.ex)
+- [Snyk](https://snyk.io/test/github/amkisko/style_capsule.ex)
+- [Codecov](https://app.codecov.io/github/amkisko/style_capsule.ex)
+- [OpenSSF Scorecard](https://scorecard.dev/viewer/?uri=github.com/amkisko/style_capsule.ex)
+
 ## License
 
 The library is available as open source under the terms of the [MIT License](LICENSE.md).

@@ -43,3 +43,5 @@ priv
 # OS files
 .DS_Store
 Thumbs.db
+
+.pray/cache

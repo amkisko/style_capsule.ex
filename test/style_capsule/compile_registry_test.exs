@@ -17,6 +17,23 @@ defmodule StyleCapsule.CompileRegistryTest do
   end
 
   describe "CompileRegistry" do
+    test "treats registry contents as data instead of executable code" do
+      registry_path = Path.join([File.cwd!(), "priv", "style_capsule_registry.etf"])
+      File.mkdir_p!(Path.dirname(registry_path))
+      File.write!(registry_path, "send(self(), :registry_code_executed); []")
+
+      assert CompileRegistry.get_all() == []
+      refute_received :registry_code_executed
+    end
+
+    test "rejects safely decoded data that does not match the component schema" do
+      registry_path = Path.join([File.cwd!(), "priv", "style_capsule_registry.etf"])
+      File.mkdir_p!(Path.dirname(registry_path))
+      File.write!(registry_path, :erlang.term_to_binary([%{module: TestComponent}]))
+
+      assert CompileRegistry.get_all() == []
+    end
+
     test "register stores a component spec" do
       # Get initial count (may have existing components from compilation)
       initial_count = length(CompileRegistry.get_all())

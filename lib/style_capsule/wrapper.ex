@@ -3,6 +3,8 @@ defmodule StyleCapsule.Wrapper do
   Wraps HTML content in a root element with `data-capsule` attribute.
   """
 
+  @forbidden_tags ~w(script iframe object embed link meta style base)
+
   @doc """
   Wraps HTML content in a root element with `data-capsule` attribute.
 
@@ -28,13 +30,28 @@ defmodule StyleCapsule.Wrapper do
     StyleCapsule.Id.validate!(capsule_id)
 
     tag_attrs = build_attrs(capsule_id, attrs)
-    tag_name = to_string(tag)
+    tag_name = validate_tag!(tag)
 
     html_string =
       html_or_iodata
       |> IO.iodata_to_binary()
 
     ~s(<#{tag_name}#{tag_attrs}>#{html_string}</#{tag_name}>)
+  end
+
+  @doc false
+  def validate_tag!(tag) do
+    tag_name = tag |> to_string() |> String.downcase()
+
+    unless Regex.match?(~r/\A[a-z][a-z0-9-]*\z/, tag_name) do
+      raise ArgumentError, "Invalid wrapper tag: #{inspect(tag)}"
+    end
+
+    if tag_name in @forbidden_tags do
+      raise ArgumentError, "Invalid wrapper tag: #{inspect(tag)}"
+    end
+
+    tag_name
   end
 
   @doc false

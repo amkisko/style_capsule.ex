@@ -151,5 +151,22 @@ defmodule StyleCapsule.FileWriterTest do
 
       assert path =~ "custom-#{capsule_id}.css"
     end
+
+    test "rejects an invalid capsule ID", %{tmp_dir: tmp_dir} do
+      assert_raise ArgumentError, ~r/Invalid capsule ID/, fn ->
+        FileWriter.write("bad id!", ".test { color: red; }", output_dir: tmp_dir)
+      end
+    end
+
+    test "rejects a filename that leaves the output directory", %{tmp_dir: tmp_dir} do
+      filename_pattern = fn _id, _css -> "/tmp/style-capsule-escaped.css" end
+
+      assert_raise ArgumentError, ~r/escapes output directory/, fn ->
+        FileWriter.write("custom123", ".test { color: red; }",
+          output_dir: tmp_dir,
+          filename_pattern: filename_pattern
+        )
+      end
+    end
   end
 end

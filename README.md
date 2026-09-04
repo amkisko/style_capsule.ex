@@ -26,7 +26,7 @@ Add `style_capsule` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:style_capsule, "~> 0.8.0"}
+    {:style_capsule, "~> 0.9.0"}
   ]
 end
 ```
@@ -34,7 +34,8 @@ end
 For Phoenix LiveView support, also ensure you have:
 
 ```elixir
-{:phoenix_live_view, "~> 0.20"}
+{:phoenix, "~> 1.8"},
+{:phoenix_live_view, "~> 1.1"}
 ```
 
 ## Quick Start
@@ -303,8 +304,8 @@ For detailed security information, see [SECURITY.md](SECURITY.md).
 ## Requirements
 
 - Elixir >= 1.18
-- Phoenix >= 1.7 (optional, for Phoenix integration)
-- Phoenix LiveView >= 0.20 (optional, for LiveView integration)
+- Phoenix ~> 1.8 (optional, for Phoenix integration)
+- Phoenix LiveView ~> 1.1 (optional, for LiveView integration)
 
 ## Links
 

@@ -13,7 +13,11 @@ defmodule StyleCapsule.Instrumentation do
   def init_inline_tracking do
     case :ets.whereis(@inline_logged_table) do
       :undefined ->
-        :ets.new(@inline_logged_table, [:set, :public, :named_table])
+        try do
+          :ets.new(@inline_logged_table, [:set, :public, :named_table])
+        rescue
+          ArgumentError -> :ok
+        end
 
       _table ->
         :ok
@@ -25,13 +29,13 @@ defmodule StyleCapsule.Instrumentation do
 
   ## Examples
 
-      iex> StyleCapsule.Instrumentation.css_processor_scope(100, 150, :patch)
+      iex> StyleCapsule.Instrumentation.css_processor_scope(100, 150, 140, :patch)
       :ok
 
   """
   @spec css_processor_scope(non_neg_integer(), non_neg_integer(), non_neg_integer(), atom()) :: :ok
   def css_processor_scope(duration_ms, input_bytes, output_bytes, strategy) do
-    :telemetry.execute(
+    safe_execute(
       @telemetry_prefix ++ [:css_processor, :scope],
       %{
         duration_ms: duration_ms,
@@ -54,7 +58,7 @@ defmodule StyleCapsule.Instrumentation do
   """
   @spec file_writer_write(non_neg_integer(), non_neg_integer(), binary()) :: :ok
   def file_writer_write(duration_ms, bytes, path) do
-    :telemetry.execute(
+    safe_execute(
       @telemetry_prefix ++ [:file_writer, :write],
       %{
         duration_ms: duration_ms,
@@ -76,7 +80,7 @@ defmodule StyleCapsule.Instrumentation do
   """
   @spec file_writer_fallback(binary(), binary(), binary(), term()) :: :ok
   def file_writer_fallback(component, original_path, fallback_path, exception) do
-    :telemetry.execute(
+    safe_execute(
       @telemetry_prefix ++ [:file_writer, :fallback],
       %{
         component: component,
@@ -101,7 +105,7 @@ defmodule StyleCapsule.Instrumentation do
   """
   @spec file_writer_failure(binary(), binary(), term()) :: :ok
   def file_writer_failure(component, path, exception) do
-    :telemetry.execute(
+    safe_execute(
       @telemetry_prefix ++ [:file_writer, :failure],
       %{
         component: component,

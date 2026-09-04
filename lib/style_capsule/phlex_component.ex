@@ -145,6 +145,18 @@ defmodule StyleCapsule.PhlexComponent do
 
     # Register at compile time if styles are present
     if styles != "" do
+      downcased_styles = String.downcase(styles)
+
+      if String.contains?(downcased_styles, "<script") or
+           String.contains?(downcased_styles, "javascript:") or
+           String.contains?(downcased_styles, "</style>") do
+        raise StyleCapsule.InvalidStyleError,
+          message:
+            "Invalid styles detected in #{inspect(env.module)}: styles may not contain script tags, javascript: URLs, or style tag closers",
+          module: env.module,
+          styles: styles
+      end
+
       StyleCapsule.CompileRegistry.register(spec)
     end
 

@@ -1,7 +1,7 @@
 defmodule StyleCapsule.PhoenixIntegrationTest do
   use ExUnit.Case, async: false
 
-  alias StyleCapsule.{Phoenix, StylesheetRegistry}
+  alias StyleCapsule.{CompileRegistry, Phoenix, StylesheetRegistry}
 
   setup do
     StylesheetRegistry.clear()
@@ -137,6 +137,18 @@ defmodule StyleCapsule.PhoenixIntegrationTest do
       assert html =~ ~r/media="screen"/
     end
 
+    test "escapes stylesheet href values" do
+      href = ~s|"/><script>alert(1)</script>|
+
+      Phoenix.register_stylesheet(href, namespace: :test)
+
+      html = Phoenix.render_styles(namespace: :test)
+
+      refute html =~ "<script>"
+      assert html =~ "&quot;"
+      assert html =~ "&lt;"
+    end
+
     test "precompiled_stylesheet_links returns list (may be empty or have existing files)" do
       links = Phoenix.precompiled_stylesheet_links()
       # May have existing build metadata from previous test runs
@@ -163,6 +175,29 @@ defmodule StyleCapsule.PhoenixIntegrationTest do
     test "render_precompiled_stylesheets with namespace" do
       html = Phoenix.render_precompiled_stylesheets(namespace: :test)
       assert is_binary(html)
+    end
+
+    test "precompiled stylesheet href uses the path after priv/static" do
+      previous = CompileRegistry.get_build_metadata()
+
+      try do
+        CompileRegistry.update_build_metadata(%{
+          namespaces: [
+            %{
+              namespace: :path_test,
+              file: "/host/app/priv/static/capsules/test.css",
+              component_count: 1
+            }
+          ]
+        })
+
+        html = Phoenix.render_precompiled_stylesheets(namespace: :path_test)
+
+        assert html =~ ~s(href="/capsules/test.css")
+        refute html =~ "/host/app"
+      after
+        CompileRegistry.update_build_metadata(previous || %{})
+      end
     end
 
     test "render_styles handles both inline and stylesheet links" do

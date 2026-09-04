@@ -1,32 +1,78 @@
 defmodule StyleCapsule.CompileRegistry do
   @moduledoc """
-  Compile-time registry for StyleCapsule components.
+  Persistent compile-time registry for StyleCapsule components.
 
-  Components register themselves at compile time via `__before_compile__` hooks,
-  storing their specs in a persistent location that the build task can read.
-
-  This approach is more reliable than runtime discovery because:
-  - Components explicitly register themselves
-  - No need to discover modules from file system or application spec
-  - Works regardless of compilation state or code paths
-
-  ## Namespace Support
-
-  Each component spec includes a namespace, which is used by the build task
-  to generate separate CSS files per namespace, preventing style leakage.
+  Registry entries are stored as safely decoded Erlang terms under the current
+  project so build tasks can consume component data without evaluating code.
   """
 
-  @registry_file "style_capsule_registry.exs"
+  @registry_file "style_capsule_registry.etf"
+  @required_fields [:module, :capsule_id, :namespace, :strategy, :cache_strategy]
 
   @doc """
   Registers a component spec at compile time.
-
-  Called automatically by components via `__before_compile__` hooks.
   """
   def register(spec) when is_map(spec) do
-    # Validate spec has required fields
-    required_fields = [:module, :capsule_id, :namespace, :strategy, :cache_strategy]
-    missing_fields = Enum.filter(required_fields, &(!Map.has_key?(spec, &1)))
+    validate_spec!(spec)
+
+    existing_data = read_registry_data()
+    existing_specs = extract_specs(existing_data)
+    existing_build = extract_build_metadata(existing_data)
+    specs = [spec | Enum.reject(existing_specs, &(&1.module == spec.module))]
+    write_registry(if(existing_build, do: %{components: specs, build: existing_build}, else: specs))
+
+    StyleCapsule.Instrumentation.component_discovered(
+      module: spec.module,
+      capsule_id: spec.capsule_id,
+      namespace: spec.namespace,
+      strategy: spec.strategy,
+      cache_strategy: spec.cache_strategy,
+      has_styles: is_binary(spec.styles) && String.trim(spec.styles) != "",
+      discovery_type: :compile_time,
+      source: :compile_registry
+    )
+
+    :ok
+  rescue
+    error ->
+      reraise StyleCapsule.RegistryError,
+              [
+                message: "Failed to persist compile registry: #{Exception.message(error)}",
+                operation: :register
+              ],
+              __STACKTRACE__
+  end
+
+  @doc """
+  Reads all registered component specs.
+  """
+  def get_all, do: read_registry_data() |> extract_specs()
+
+  @doc """
+  Updates build metadata while preserving component specs.
+  """
+  def update_build_metadata(metadata) when is_map(metadata) do
+    write_registry(%{components: get_all(), build: metadata})
+  end
+
+  @doc """
+  Gets build metadata from the registry.
+  """
+  def get_build_metadata, do: read_registry_data() |> extract_build_metadata()
+
+  @doc """
+  Clears the compile-time registry.
+  """
+  def clear do
+    case File.rm(registry_path()) do
+      :ok -> :ok
+      {:error, :enoent} -> :ok
+      {:error, reason} -> raise File.Error, reason: reason, action: "remove file", path: registry_path()
+    end
+  end
+
+  defp validate_spec!(spec) do
+    missing_fields = Enum.reject(@required_fields, &Map.has_key?(spec, &1))
 
     if missing_fields != [] do
       raise StyleCapsule.RegistryError,
@@ -34,262 +80,73 @@ defmodule StyleCapsule.CompileRegistry do
         operation: :register
     end
 
-    # Write to a file that the build task can read
-    # This file is created during compilation and read during build
-    registry_path = registry_path()
-
-    File.mkdir_p!(Path.dirname(registry_path))
-
-    # Read existing registry or start fresh
-    existing_data = read_registry_data()
-    existing_specs = extract_specs(existing_data)
-    existing_build = extract_build_metadata(existing_data)
-
-    # Add new spec (deduplicate by module)
-    new_specs = [spec | Enum.reject(existing_specs, &(&1.module == spec.module))]
-
-    # Write back to file, preserving build metadata if it exists
-    registry_data =
-      if existing_build do
-        %{components: new_specs, build: existing_build}
-      else
-        new_specs
-      end
-
-    content = """
-    # Auto-generated StyleCapsule component registry
-    # Do not edit manually - this file is generated during compilation and build
-    #{inspect(registry_data, pretty: true, limit: :infinity, printable_limit: :infinity)}
-    """
-
-    File.write!(registry_path, content)
-
-    # Emit telemetry event
-    StyleCapsule.Instrumentation.component_discovered(
-      module: spec.module,
-      capsule_id: spec.capsule_id,
-      namespace: spec.namespace,
-      strategy: spec.strategy,
-      cache_strategy: spec.cache_strategy,
-      has_styles: spec.styles != nil && spec.styles != "" && String.trim(spec.styles || "") != "",
-      discovery_type: :compile_time,
-      source: :compile_registry
-    )
-
-    :ok
-  rescue
-    e ->
-      reraise StyleCapsule.RegistryError,
-              [message: "Failed to create registry directory: #{Exception.message(e)}", operation: :register],
-              __STACKTRACE__
-  end
-
-  @doc """
-  Reads all registered component specs from the compile-time registry.
-
-  Used by the build task to discover all components.
-  """
-  def get_all do
-    read_registry()
-  end
-
-  @doc """
-  Updates the registry with build metadata.
-
-  Called by the build task after generating CSS files to add build information.
-  """
-  def update_build_metadata(metadata) when is_map(metadata) do
-    registry_path = registry_path()
-
-    # Read existing specs (preserve them)
-    existing_data = read_registry_data()
-    specs = extract_specs(existing_data)
-
-    # Create enhanced registry with build metadata
-    enhanced_registry = %{
-      components: specs,
-      build: metadata
-    }
-
-    # Write back with build metadata
-    content = """
-    # Auto-generated StyleCapsule component registry
-    # Do not edit manually - this file is generated during compilation and build
-    #{inspect(enhanced_registry, pretty: true, limit: :infinity, printable_limit: :infinity)}
-    """
-
-    File.mkdir_p!(Path.dirname(registry_path))
-    File.write!(registry_path, content)
-    :ok
-  end
-
-  @doc """
-  Gets build metadata from the registry.
-
-  Returns nil if no build metadata exists.
-  """
-  def get_build_metadata do
-    data = read_registry_data()
-    extract_build_metadata(data)
-  end
-
-  @doc """
-  Clears the compile-time registry.
-
-  Useful for testing or clean builds.
-  """
-  def clear do
-    registry_path = registry_path()
-
-    if File.exists?(registry_path) do
-      File.rm!(registry_path)
+    unless valid_spec?(spec) do
+      raise StyleCapsule.RegistryError,
+        message: "Invalid spec: field types do not match the registry schema",
+        operation: :register
     end
-
-    :ok
   end
 
-  defp read_registry do
-    data = read_registry_data()
-    extract_specs(data)
+  defp write_registry(data) do
+    path = registry_path()
+    File.mkdir_p!(Path.dirname(path))
+    temporary_path = "#{path}.#{System.unique_integer([:positive])}.tmp"
+
+    try do
+      File.write!(temporary_path, :erlang.term_to_binary(data, compressed: 6), [:binary])
+      File.rename!(temporary_path, path)
+      :ok
+    after
+      if File.exists?(temporary_path), do: File.rm(temporary_path)
+    end
   end
 
   defp read_registry_data do
-    registry_path = registry_path()
+    case File.read(registry_path()) do
+      {:ok, binary} ->
+        binary
+        |> :erlang.binary_to_term([:safe])
+        |> validate_registry_data()
 
-    if File.exists?(registry_path) do
-      try do
-        # Use absolute path for Code.eval_file
-        abs_path = Path.expand(registry_path)
-        {data, _} = Code.eval_file(abs_path)
-        data
-      rescue
-        _e ->
-          # Fallback: try reading as string and evaluating
-          try do
-            content = File.read!(registry_path)
-            {data, _} = Code.eval_string(content)
-            data
-          rescue
-            _ ->
-              # If both methods fail, return empty list
-              []
-          end
-      end
-    else
-      # Try alternative paths if the primary path doesn't exist
-      # This helps when the app is running from a different directory
-      alternative_paths = [
-        # Try from current working directory
-        Path.join([File.cwd!(), "priv", @registry_file]),
-        # Try from common Phoenix app locations
-        Path.join([System.user_home!(), ".mix", "projects", "phoenix_demo", "priv", @registry_file])
-      ]
+      {:error, :enoent} ->
+        []
 
-      Enum.reduce_while(alternative_paths, [], fn alt_path, _acc ->
-        if File.exists?(alt_path) do
-          try do
-            abs_path = Path.expand(alt_path)
-            {data, _} = Code.eval_file(abs_path)
-            {:halt, data}
-          rescue
-            _ -> {:cont, []}
-          end
-        else
-          {:cont, []}
-        end
-      end)
+      {:error, _reason} ->
+        []
     end
-  end
-
-  defp extract_specs(data) do
-    case data do
-      list when is_list(list) -> list
-      %{components: specs} when is_list(specs) -> specs
-      _ -> []
-    end
-  end
-
-  defp extract_build_metadata(data) do
-    case data do
-      %{build: metadata} when is_map(metadata) -> metadata
-      _ -> nil
-    end
-  end
-
-  defp registry_path do
-    # Store in project root's priv directory (not in _build)
-    # Try multiple strategies to find the registry file at runtime
-
-    # Strategy 1: Try to find from any loaded application
-    # Check all loaded applications for a registry file
-    apps_with_registry =
-      try do
-        Application.loaded_applications()
-        |> Enum.map(fn {app, _description, _version} ->
-          try do
-            app_dir = Application.app_dir(app)
-            project_root = project_root_from_app_dir(app_dir)
-
-            registry_path = Path.join([project_root, "priv", @registry_file])
-
-            if File.exists?(registry_path) do
-              registry_path
-            else
-              nil
-            end
-          rescue
-            _ -> nil
-          end
-        end)
-        |> Enum.filter(&(&1 != nil))
-      rescue
-        _ -> []
-      end
-
-    if apps_with_registry != [] do
-      # Use the first found registry file
-      hd(apps_with_registry)
-    else
-      # Strategy 2: Try Mix.Project (compilation time only)
-      app =
-        try do
-          if Code.ensure_loaded?(Mix.Project) do
-            Mix.Project.config()[:app]
-          else
-            nil
-          end
-        rescue
-          _ -> nil
-        end
-
-      if app do
-        try do
-          app_dir = Application.app_dir(app)
-          project_root = project_root_from_app_dir(app_dir)
-          project_priv = Path.join([project_root, "priv"])
-          Path.join([project_priv, @registry_file])
-        rescue
-          _ -> fallback_registry_path()
-        end
-      else
-        fallback_registry_path()
-      end
-    end
-  end
-
-  defp project_root_from_app_dir(app_dir) do
-    # app_dir is _build/<env>/lib/<app_name>
-    app_dir
-    |> Path.dirname()
-    |> Path.dirname()
-    |> Path.dirname()
-    |> Path.dirname()
-  end
-
-  defp fallback_registry_path do
-    # Strategy 3: Fall back to File.cwd!() (works during compilation)
-    Path.join([File.cwd!(), "priv", @registry_file])
   rescue
-    _ -> Path.join([System.tmp_dir!(), @registry_file])
+    ArgumentError -> []
   end
+
+  defp validate_registry_data(data) when is_list(data) do
+    if Enum.all?(data, &valid_spec?/1), do: data, else: []
+  end
+
+  defp validate_registry_data(%{components: specs, build: metadata} = data)
+       when is_list(specs) and is_map(metadata) do
+    if Enum.all?(specs, &valid_spec?/1), do: data, else: []
+  end
+
+  defp validate_registry_data(_data), do: []
+
+  defp valid_spec?(spec) when is_map(spec) do
+    Enum.all?(@required_fields, &Map.has_key?(spec, &1)) &&
+      is_atom(spec.module) &&
+      is_binary(spec.capsule_id) &&
+      (is_atom(spec.namespace) || is_binary(spec.namespace)) &&
+      is_atom(spec.strategy) &&
+      is_atom(spec.cache_strategy) &&
+      (is_nil(Map.get(spec, :styles)) || is_binary(spec.styles))
+  end
+
+  defp valid_spec?(_spec), do: false
+
+  defp extract_specs(specs) when is_list(specs), do: specs
+  defp extract_specs(%{components: specs}) when is_list(specs), do: specs
+  defp extract_specs(_data), do: []
+
+  defp extract_build_metadata(%{build: metadata}) when is_map(metadata), do: metadata
+  defp extract_build_metadata(_data), do: nil
+
+  defp registry_path, do: Path.join([File.cwd!(), "priv", @registry_file])
 end

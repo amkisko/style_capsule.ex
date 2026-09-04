@@ -16,18 +16,20 @@ defmodule StyleCapsule.FileWriter do
 
   ## Examples
 
-      iex> StyleCapsule.FileWriter.write("abc12345", ".test { color: red; }")
-      {:ok, "/path/to/capsule-abc12345.css"}
+      StyleCapsule.FileWriter.write("abc12345", ".test { color: red; }", output_dir: "priv/static/capsules")
+      #=> {:ok, "priv/static/capsules/capsule-abc12345.css"}
 
   """
   @spec write(binary(), binary(), keyword()) :: {:ok, binary()} | {:error, term()}
   def write(capsule_id, css, opts \\ []) do
+    StyleCapsule.Id.validate!(capsule_id)
+
     output_dir = Keyword.get(opts, :output_dir, StyleCapsule.Config.output_dir())
     fallback_dir = Keyword.get(opts, :fallback_dir, StyleCapsule.Config.fallback_dir())
     filename_pattern = Keyword.get(opts, :filename_pattern, &default_filename_pattern/2)
 
     filename = filename_pattern.(capsule_id, css)
-    path = Path.join(output_dir, filename)
+    path = contained_path!(output_dir, filename)
 
     start_time = System.monotonic_time(:microsecond)
 
@@ -41,8 +43,7 @@ defmodule StyleCapsule.FileWriter do
         {:ok, path}
 
       {:error, reason} ->
-        # Try fallback directory
-        fallback_path = Path.join(fallback_dir, filename)
+        fallback_path = contained_path!(fallback_dir, filename)
 
         case write_file(fallback_path, css) do
           :ok ->
@@ -74,7 +75,6 @@ defmodule StyleCapsule.FileWriter do
 
   @doc false
   defp write_file(path, content) do
-    # Ensure directory exists
     dir = Path.dirname(path)
 
     case File.mkdir_p(dir) do
@@ -83,6 +83,19 @@ defmodule StyleCapsule.FileWriter do
 
       error ->
         error
+    end
+  end
+
+  @doc false
+  defp contained_path!(dir, filename) do
+    expanded_dir = Path.expand(dir)
+    expanded_path = Path.expand(filename, expanded_dir)
+    dir_prefix = String.trim_trailing(expanded_dir, "/") <> "/"
+
+    if expanded_path == expanded_dir or String.starts_with?(expanded_path, dir_prefix) do
+      expanded_path
+    else
+      raise ArgumentError, "Filename escapes output directory: #{inspect(filename)}"
     end
   end
 

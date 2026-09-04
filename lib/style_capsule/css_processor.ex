@@ -31,7 +31,7 @@ defmodule StyleCapsule.CssProcessor do
   def scope(css, capsule_id, opts \\ []) do
     strategy = Keyword.get(opts, :strategy, :patch)
     validate_capsule_id!(capsule_id)
-    validate_css_size!(css)
+    validate_css!(css)
 
     start_time = System.monotonic_time(:microsecond)
     input_bytes = byte_size(css)
@@ -47,7 +47,6 @@ defmodule StyleCapsule.CssProcessor do
     duration_ms = div(end_time - start_time, 1000)
     output_bytes = byte_size(result)
 
-    # Emit telemetry event
     StyleCapsule.Instrumentation.css_processor_scope(duration_ms, input_bytes, output_bytes, strategy)
 
     result
@@ -55,85 +54,77 @@ defmodule StyleCapsule.CssProcessor do
 
   @doc false
   defp patch_selectors(css, capsule_id) do
-    # Fast-path: if there's no rule opener, nothing to patch
     if css == "" or not String.contains?(css, "{") do
       css
     else
-      # NOTE: This is a simplified implementation that adds a prefix to selectors.
-      # A full CSS parser can be integrated later if needed.
       selector_prefix = ~s([data-capsule="#{capsule_id}"])
 
       css
       |> String.split("\n")
-      |> Enum.map_join("\n", fn line ->
-        cond do
-          # Opening rule line on a single line: ".selector { ... }"
-          String.contains?(line, "{") and String.contains?(line, "}") ->
-            case Regex.run(~r/^(\s*)([^{]+)(\{[^}]+\})/, line) do
-              [_, indent, selectors, rules] ->
-                scoped_selectors =
-                  selectors
-                  |> String.trim()
-                  |> String.split(",")
-                  |> Enum.map(&String.trim/1)
-                  |> Enum.map(fn selector ->
-                    # Translate :host to root selector
-                    translated = translate_host_selector(selector, selector_prefix)
+      |> Enum.map_join("\n", &patch_line(&1, selector_prefix))
+    end
+  end
 
-                    # If :host was translated, use it directly; otherwise prefix
-                    if translated == selector_prefix do
-                      translated
-                    else
-                      selector_prefix <> " " <> translated
-                    end
-                  end)
-                  |> Enum.map_join(", ", & &1)
+  defp patch_line(line, selector_prefix) do
+    cond do
+      String.contains?(line, "{") and String.contains?(line, "}") ->
+        case Regex.run(~r/^(\s*)([^{]+)(\{[^}]+\})/, line) do
+          [_, indent, selectors, rules] ->
+            indent <> scope_selector_list(selectors, selector_prefix) <> " " <> rules
 
-                indent <> scoped_selectors <> " " <> rules
-
-              _ ->
-                # If pattern doesn't match, leave line as-is
-                line
-            end
-
-          # Opening rule line for multi-line block: ".selector {"
-          String.contains?(line, "{") ->
-            case Regex.run(~r/^(\s*)([^{]+)\{(.*)$/, line) do
-              [_, indent, selectors, rest] ->
-                scoped_selectors =
-                  selectors
-                  |> String.trim()
-                  |> String.split(",")
-                  |> Enum.map(&String.trim/1)
-                  |> Enum.map_join(", ", fn selector ->
-                    # Translate :host to root selector
-                    translated = translate_host_selector(selector, selector_prefix)
-
-                    # If :host was translated, use it directly; otherwise prefix
-                    if translated == selector_prefix do
-                      translated
-                    else
-                      selector_prefix <> " " <> translated
-                    end
-                  end)
-
-                indent <> scoped_selectors <> " {" <> rest
-
-              _ ->
-                line
-            end
-
-          true ->
+          _ ->
             line
         end
-      end)
+
+      String.contains?(line, "{") ->
+        case Regex.run(~r/^(\s*)([^{]+)\{(.*)$/, line) do
+          [_, indent, selectors, rest] ->
+            indent <> scope_selector_list(selectors, selector_prefix) <> " {" <> rest
+
+          _ ->
+            line
+        end
+
+      true ->
+        line
     end
+  end
+
+  defp scope_selector_list(selectors, selector_prefix) do
+    selectors
+    |> String.trim()
+    |> String.split(",")
+    |> Enum.map(&String.trim/1)
+    |> Enum.map_join(", ", &scope_one_selector(&1, selector_prefix))
+  end
+
+  defp scope_one_selector("", _selector_prefix), do: ""
+
+  defp scope_one_selector(selector, selector_prefix) do
+    cond do
+      String.starts_with?(selector, "@") ->
+        selector
+
+      keyframe_stop?(selector) ->
+        selector
+
+      true ->
+        translated = translate_host_selector(selector, selector_prefix)
+
+        if String.contains?(translated, selector_prefix) do
+          translated
+        else
+          selector_prefix <> " " <> translated
+        end
+    end
+  end
+
+  defp keyframe_stop?(selector) do
+    selector in ["from", "to"] or Regex.match?(~r/\A\d+(\.\d+)?%\z/, selector)
   end
 
   @doc false
   defp wrap_nesting(css, capsule_id) do
-    # Wrap the entire CSS in the capsule attribute selector with newlines for readability
-    # This matches the Ruby version's formatting
     capsule_attr = ~s([data-capsule="#{capsule_id}"])
     "#{capsule_attr} {\n#{css}\n}"
   end
@@ -141,11 +132,8 @@ defmodule StyleCapsule.CssProcessor do
   @doc false
   defp translate_host_selector(selector, selector_prefix) do
     selector
-    # :host(.foo) => [data-capsule="..."].foo
-    |> String.replace(~r/:host\(([^)]*)\)/, selector_prefix <> "\\1")
-    # :host-context(.foo) => [data-capsule="..."] .foo
     |> String.replace(~r/:host-context\(([^)]*)\)/, selector_prefix <> " \\1")
-    # bare :host => [data-capsule="..."]
+    |> String.replace(~r/:host\(([^)]*)\)/, selector_prefix <> "\\1")
     |> String.replace(~r/:host\b/, selector_prefix)
   end
 
@@ -155,15 +143,22 @@ defmodule StyleCapsule.CssProcessor do
   end
 
   @doc false
-  defp validate_css_size!(css) when is_binary(css) do
+  defp validate_css!(css) when is_binary(css) do
     max_size = StyleCapsule.Config.max_css_size()
 
     if byte_size(css) > max_size do
       raise ArgumentError,
             "CSS content exceeds maximum size of #{max_size} bytes (got #{byte_size(css)} bytes)"
     end
+
+    if String.contains?(String.downcase(css), "</style>") do
+      raise ArgumentError, "CSS content must not contain </style>"
+    end
+
+    :ok
   end
 
-  @doc false
-  defp validate_css_size!(_), do: :ok
+  defp validate_css!(other) do
+    raise ArgumentError, "CSS content must be a binary, got: #{inspect(other)}"
+  end
 end

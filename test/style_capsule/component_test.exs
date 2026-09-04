@@ -159,6 +159,20 @@ defmodule StyleCapsule.ComponentTest do
       end
     end
 
+    test "component rejects a style-tag closer in @component_styles" do
+      assert_raise StyleCapsule.InvalidStyleError, fn ->
+        defmodule TestComponentStyleCloser do
+          use Phoenix.Component
+          use StyleCapsule.Component
+
+          @component_styles """
+          .test { color: red; }
+          </style><script>alert(1)</script>
+          """
+        end
+      end
+    end
+
     test "get_component_styles falls back to styles/0 when @component_styles not set" do
       defmodule TestComponentStylesFallback do
         use Phoenix.Component
@@ -225,6 +239,20 @@ defmodule StyleCapsule.ComponentTest do
         Component.capsule(assigns)
       rescue
         _ -> :ok
+      end
+    end
+
+    test "capsule rejects a script wrapper tag as ArgumentError" do
+      assigns = %{
+        __changed__: %{},
+        module: TestComponentWithStyles,
+        tag: :script,
+        rest: [],
+        inner_block: fn _ -> [] end
+      }
+
+      assert_raise ArgumentError, ~r/Invalid wrapper tag/, fn ->
+        Component.capsule(assigns)
       end
     end
 

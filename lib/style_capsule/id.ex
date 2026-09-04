@@ -59,6 +59,14 @@ defmodule StyleCapsule.Id do
     else
       base_id
     end
+    |> then(fn id ->
+      if String.length(id) > @max_length do
+        raise ArgumentError,
+              "Generated capsule ID exceeds #{@max_length} characters, got #{String.length(id)}"
+      end
+
+      id
+    end)
   end
 
   @doc """

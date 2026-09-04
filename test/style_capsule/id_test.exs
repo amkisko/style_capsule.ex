@@ -30,6 +30,14 @@ defmodule StyleCapsule.IdTest do
       assert String.starts_with?(id, "card-")
     end
 
+    test "rejects a prefix that makes the generated ID too long" do
+      prefix = String.duplicate("p", 25)
+
+      assert_raise ArgumentError, ~r/exceeds/, fn ->
+        Id.generate(MyAppWeb.Components.Card, prefix: prefix, length: 12)
+      end
+    end
+
     test "generates URL-safe IDs" do
       id = Id.generate(MyAppWeb.Components.Card)
       assert Regex.match?(~r/^[a-zA-Z0-9_-]+$/, id)

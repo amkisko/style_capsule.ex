@@ -159,7 +159,11 @@ defmodule StyleCapsule.Cache do
   defp ensure_ets_table do
     case :ets.whereis(@ets_table) do
       :undefined ->
-        :ets.new(@ets_table, [:named_table, :public, :set, {:read_concurrency, true}])
+        try do
+          :ets.new(@ets_table, [:named_table, :public, :set, {:read_concurrency, true}])
+        rescue
+          ArgumentError -> :ok
+        end
 
       _pid ->
         :ok

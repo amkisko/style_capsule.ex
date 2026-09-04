@@ -145,23 +145,22 @@ defmodule StyleCapsule.Phoenix do
   end
 
   defp convert_file_path_to_url(file, base_path) when is_binary(file) do
+    relative =
+      case String.split(file, "priv/static/", parts: 2) do
+        [_prefix, rest] -> rest
+        _ -> Path.basename(file)
+      end
+      |> String.replace("\\", "/")
+
     case base_path do
       nil ->
-        # Default: remove "priv/static" prefix and ensure it starts with "/"
-        file
-        |> String.replace(~r/^priv\/static\//, "")
-        |> then(&if String.starts_with?(&1, "/"), do: &1, else: "/#{&1}")
+        if String.starts_with?(relative, "/"), do: relative, else: "/#{relative}"
 
       path when is_binary(path) ->
-        # Custom base path
-        file
-        |> String.replace(~r/^priv\/static\//, "")
-        |> then(&Path.join([path, &1]))
-        # Normalize Windows paths
-        |> String.replace("\\", "/")
+        Path.join([path, relative]) |> String.replace("\\", "/")
 
       _ ->
-        file
+        relative
     end
   end
 
@@ -256,7 +255,7 @@ defmodule StyleCapsule.Phoenix do
   defp render_stylesheet_links(links) do
     Enum.map_join(links, "\n", fn link ->
       attrs_string = build_attrs_string(link.attrs)
-      ~s(<link rel="stylesheet" href="#{link.href}"#{attrs_string}>)
+      ~s(<link rel="stylesheet" href="#{escape_html_attr(to_string(link.href))}"#{attrs_string}>)
     end)
   end
 

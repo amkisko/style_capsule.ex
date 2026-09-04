@@ -45,5 +45,21 @@ defmodule StyleCapsule.WrapperTest do
         Wrapper.wrap(html, "invalid id!")
       end
     end
+
+    test "rejects a script wrapper tag" do
+      html = "<div>Hello</div>"
+
+      assert_raise ArgumentError, ~r/Invalid wrapper tag/, fn ->
+        Wrapper.wrap(html, "abc12345", tag: :script)
+      end
+    end
+
+    test "rejects a tag name that is not an HTML name" do
+      html = "<div>Hello</div>"
+
+      assert_raise ArgumentError, ~r/Invalid wrapper tag/, fn ->
+        Wrapper.wrap(html, "abc12345", tag: :"img onerror=alert(1)")
+      end
+    end
   end
 end

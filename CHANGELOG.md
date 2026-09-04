@@ -1,15 +1,19 @@
 # CHANGELOG
 
-## Unreleased
+## 0.9.0 (2026-09-04)
 
-- Renamed `StyleCapsule.Registry` to `StyleCapsule.StylesheetRegistry` (aligns with Ruby `StylesheetRegistry`)
-- `StyleCapsule.Registry` remains as a deprecated delegate for one release
-- Moved `preferred_cli_env` to `def cli/0` (Mix 1.19)
-- Updated dependencies (`castore`, `erlex`, `plug_crypto`)
-- Fixed flaky discovery telemetry tests under parallel ExUnit
-- README: codecov badge, sponsors, contribution policy, security section, version pin `~> 0.8.0`
-- CI: JUnit test results upload to Codecov (`junit_formatter`, `coverage/junit-coverage.xml`)
-- Release: extracted `usr/lib/release_version_check.ex`, `Makefile` release target
+- Rename `StyleCapsule.Registry` to `StyleCapsule.StylesheetRegistry`; keep `StyleCapsule.Registry` as a deprecated delegate for this release
+- Store the compile-time component registry as Erlang terms so build tasks no longer evaluate Elixir source
+- Scope `:host()`, `:host-context()`, and `:host` descendants without doubling the capsule prefix
+- Leave `@media` queries and keyframe stops unprefixed while scoping inner selectors
+- Escape stylesheet href values in rendered link tags
+- Reject CSS that contains a style tag closer
+- Reject wrapper tags that are not ordinary HTML names
+- Refuse file writes whose filename leaves the output directory
+- Raise `ArgumentError` for an invalid capsule wrapper tag instead of `CapsuleNotFoundError`
+- Surface `register_inline` failures instead of swallowing them
+- Keep precompiled stylesheet URLs relative to `priv/static` when the build path is absolute
+- Pin the documented Phoenix stack to Phoenix `~> 1.8` and LiveView `~> 1.1`
 
 ## 0.8.0
 
